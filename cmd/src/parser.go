@@ -3,6 +3,7 @@ package parser
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -32,7 +33,22 @@ func Parse(s *Storage, format string) (string, error) {
 		return "", err
 	}
 
-	bytes, err := json.Marshal(fields)
+	fmt.Println(fields)
+
+	res := []string{}
+	for _, field := range fields {
+		if field.OldValue == field.NewValue {
+			res = append(res, fmt.Sprintf("%s: %v", field.Name, field.NewValue))
+		} else {
+			if field.OldValue == nil {
+				res = append(res, fmt.Sprintf("%s %s: %v", field.TypeOfChange, field.Name, field.NewValue))
+			} else {
+				res = append(res, fmt.Sprintf("%s %s: %v", field.TypeOfChange, field.Name, field.OldValue))
+			}
+		}
+	}
+
+	bytes, err := json.Marshal(res)
 	if err != nil {
 		return "", err
 	}
@@ -80,33 +96,38 @@ func diff(maps []map[string]any) ([]Field, error) {
 		if isExistsInFirst && isExistsInSecond {
 			if maps[0][k] == maps[1][k] {
 				fields = append(fields, Field{
-					Name:     k,
-					OldValue: maps[0][k],
-					NewValue: maps[1][k],
+					Name:         k,
+					TypeOfChange: "",
+					OldValue:     maps[0][k],
+					NewValue:     maps[1][k],
 				})
 			} else {
 				fields = append(fields, Field{
-					Name:     k,
-					OldValue: maps[0][k],
-					NewValue: nil,
+					Name:         k,
+					TypeOfChange: Removed,
+					OldValue:     maps[0][k],
+					NewValue:     nil,
 				})
 				fields = append(fields, Field{
-					Name:     k,
-					OldValue: nil,
-					NewValue: maps[1][k],
+					Name:         k,
+					TypeOfChange: Added,
+					OldValue:     nil,
+					NewValue:     maps[1][k],
 				})
 			}
 		} else if isExistsInFirst {
 			fields = append(fields, Field{
-				Name:     k,
-				OldValue: maps[0][k],
-				NewValue: nil,
+				Name:         k,
+				TypeOfChange: Removed,
+				OldValue:     maps[0][k],
+				NewValue:     nil,
 			})
 		} else if isExistsInSecond {
 			fields = append(fields, Field{
-				Name:     k,
-				OldValue: nil,
-				NewValue: maps[1][k],
+				Name:         k,
+				TypeOfChange: Added,
+				OldValue:     nil,
+				NewValue:     maps[1][k],
 			})
 		}
 	}

@@ -33,8 +33,6 @@ func Parse(s *Storage, format string) (string, error) {
 		return "", err
 	}
 
-	fmt.Println(fields)
-
 	res := []string{}
 	for _, field := range fields {
 		if field.OldValue == field.NewValue {

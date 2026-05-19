@@ -26,7 +26,9 @@ func main() {
 			path1 := cmd.Args().Get(0)
 			path2 := cmd.Args().Get(1)
 
-			res, err := parser.Parse(path1, path2, cmd.StringArg("format"))
+			s := &parser.Storage{Path1: path1, Path2: path2}
+
+			res, err := parser.Parse(s, cmd.StringArg("format"))
 			if err != nil {
 				return err
 			}

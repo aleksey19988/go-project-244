@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -33,25 +32,33 @@ func Parse(s *Storage, format string) (string, error) {
 		return "", err
 	}
 
-	res := []string{}
+	formatted := formatOutput(fields, format)
+
+	return formatted, nil
+}
+
+func formatOutput(fields []Field, format string) string {
+	res := "{\n"
+
 	for _, field := range fields {
 		if field.OldValue == field.NewValue {
-			res = append(res, fmt.Sprintf("%s: %v", field.Name, field.NewValue))
+			res += fmt.Sprintf("    %s: %v\n", field.Name, field.NewValue)
 		} else {
 			if field.OldValue == nil {
-				res = append(res, fmt.Sprintf("%s %s: %v", field.TypeOfChange, field.Name, field.NewValue))
+				res += getOutputString(field.TypeOfChange, field.Name, field.NewValue)
 			} else {
-				res = append(res, fmt.Sprintf("%s %s: %v", field.TypeOfChange, field.Name, field.OldValue))
+				res += getOutputString(field.TypeOfChange, field.Name, field.OldValue)
 			}
 		}
 	}
 
-	bytes, err := json.Marshal(res)
-	if err != nil {
-		return "", err
-	}
+	res += "}"
 
-	return string(bytes), nil
+	return res
+}
+
+func getOutputString(typeOfChange, name string, value any) string {
+	return fmt.Sprintf("  %s %s: %v\n", typeOfChange, name, value)
 }
 
 func validate(path string) error {

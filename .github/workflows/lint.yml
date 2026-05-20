@@ -1,4 +1,4 @@
-name: workflow.yml
+name: lint.yml
 
 on: push
 

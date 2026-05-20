@@ -63,12 +63,12 @@ func getOutputString(typeOfChange, name string, value any) string {
 
 func validate(path string) error {
 	if path == "" {
-		return errors.New("Path to file is empty")
+		return errors.New("path to file is empty")
 	}
 
 	ext1 := filepath.Ext(path)
 	if ext1 != ".json" {
-		return errors.New("Path to file must have .json extension")
+		return errors.New("path to file must have .json extension")
 	}
 
 	return nil
@@ -79,7 +79,7 @@ func diff(maps []map[string]any) ([]Field, error) {
 
 	keys := make([]string, 0)
 	for _, m := range maps {
-		for k, _ := range m {
+		for k := range m {
 			if !slices.Contains(keys, k) {
 				keys = append(keys, k)
 			}

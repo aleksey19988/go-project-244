@@ -1,7 +1,8 @@
 package main
 
 import (
-	parser "code/cmd/src"
+	"code/internal/parser"
+	"code/internal/storage"
 	"context"
 	"fmt"
 	"log"
@@ -26,7 +27,7 @@ func main() {
 			path1 := cmd.Args().Get(0)
 			path2 := cmd.Args().Get(1)
 
-			s := &parser.Storage{Path1: path1, Path2: path2}
+			s := storage.NewStorage(path1, path2)
 
 			res, err := parser.Parse(s, cmd.StringArg("format"))
 			if err != nil {

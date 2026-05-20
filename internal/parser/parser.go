@@ -1,25 +1,36 @@
 package parser
 
 import (
+	"code/internal/storage"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"slices"
 )
 
-func Parse(s *Storage, format string) (string, error) {
-	for _, path := range s.GetPaths() {
-		err := validate(path)
-		if err != nil {
-			return "", err
-		}
+type Field struct {
+	Name         string
+	TypeOfChange string
+	OldValue     any
+	NewValue     any
+}
 
-		data, err := os.ReadFile(path)
+const (
+	Added   = "+"
+	Removed = "-"
+)
+
+func Parse(s *storage.Storage, format string) (string, error) {
+	for _, path := range s.GetPaths() {
+		err := Validate(path)
 		if err != nil {
 			return "", err
 		}
-		s.RawData = append(s.RawData, data)
+	}
+
+	err := s.SetRawData()
+	if err != nil {
+		return "", err
 	}
 
 	mapsWithData, err := s.CreateMapsFromData()
@@ -27,17 +38,17 @@ func Parse(s *Storage, format string) (string, error) {
 		return "", err
 	}
 
-	fields, err := diff(mapsWithData)
+	fields, err := Diff(mapsWithData)
 	if err != nil {
 		return "", err
 	}
 
-	formatted := formatOutput(fields, format)
+	formatted := FormatOutput(fields, format)
 
 	return formatted, nil
 }
 
-func formatOutput(fields []Field, format string) string {
+func FormatOutput(fields []Field, format string) string {
 	res := "{\n"
 
 	for _, field := range fields {
@@ -45,9 +56,9 @@ func formatOutput(fields []Field, format string) string {
 			res += fmt.Sprintf("    %s: %v\n", field.Name, field.NewValue)
 		} else {
 			if field.OldValue == nil {
-				res += getOutputString(field.TypeOfChange, field.Name, field.NewValue)
+				res += GetOutputString(field.TypeOfChange, field.Name, field.NewValue)
 			} else {
-				res += getOutputString(field.TypeOfChange, field.Name, field.OldValue)
+				res += GetOutputString(field.TypeOfChange, field.Name, field.OldValue)
 			}
 		}
 	}
@@ -56,12 +67,10 @@ func formatOutput(fields []Field, format string) string {
 
 	return res
 }
-
-func getOutputString(typeOfChange, name string, value any) string {
+func GetOutputString(typeOfChange, name string, value any) string {
 	return fmt.Sprintf("  %s %s: %v\n", typeOfChange, name, value)
 }
-
-func validate(path string) error {
+func Validate(path string) error {
 	if path == "" {
 		return errors.New("path to file is empty")
 	}
@@ -73,8 +82,7 @@ func validate(path string) error {
 
 	return nil
 }
-
-func diff(maps []map[string]any) ([]Field, error) {
+func Diff(maps []map[string]any) ([]Field, error) {
 	var fields []Field
 
 	keys := make([]string, 0)

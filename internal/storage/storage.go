@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 )
 
@@ -19,33 +20,31 @@ func (s *Storage) GetPaths() []string {
 	return []string{s.Path1, s.Path2}
 }
 func (s *Storage) CreateMapsFromData() ([]map[string]any, error) {
-	if s.RawData == nil {
-		err := s.SetRawData()
-		if err != nil {
+	if len(s.RawData) == 0 {
+		if err := s.SetRawData(); err != nil {
 			return nil, err
 		}
 	}
 	result := make([]map[string]any, 0)
-	for _, d := range s.RawData {
+	for i, data := range s.RawData {
 		m := make(map[string]any)
-		err := json.Unmarshal(d, &m)
-		if err != nil {
-			return nil, err
+		if err := json.Unmarshal(data, &m); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal file #%d: %w", i+1, err)
 		}
-
 		result = append(result, m)
 	}
 
 	return result, nil
 }
 func (s *Storage) SetRawData() error {
+	s.RawData = make([][]byte, 0, 2)
+
 	for _, path := range s.GetPaths() {
 		data, err := os.ReadFile(path)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read %s: %w", path, err)
 		}
 		s.RawData = append(s.RawData, data)
 	}
-
 	return nil
 }

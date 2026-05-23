@@ -85,15 +85,7 @@ func Validate(path string) error {
 func Diff(maps []map[string]any) ([]Field, error) {
 	var fields []Field
 
-	keys := make([]string, 0)
-	for _, m := range maps {
-		for k := range m {
-			if !slices.Contains(keys, k) {
-				keys = append(keys, k)
-			}
-		}
-	}
-
+	keys := getCommonKeys(maps)
 	slices.Sort(keys)
 
 	for _, k := range keys {
@@ -146,4 +138,17 @@ func Diff(maps []map[string]any) ([]Field, error) {
 	}
 
 	return fields, nil
+}
+func getCommonKeys(maps []map[string]any) []string {
+	res := make([]string, 0)
+
+	for _, m := range maps {
+		for k := range m {
+			if !slices.Contains(res, k) {
+				res = append(res, k)
+			}
+		}
+	}
+
+	return res
 }

@@ -38,7 +38,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # обязательно для SonarCloud (PR decoration)
+          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -59,12 +59,10 @@ jobs:
             -race
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v8
+        uses: SonarSource/sonarqube-scan-action@v8.1.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.organization=your_org_key
-            -Dsonar.projectKey=your_project_key
-            -Dsonar.projectName=Your Project Name
-            -Dsonar.go.coverage.reportPaths=coverage.out
+            -Dsonar.organization=aleksey19988
+            -Dsonar.projectKey=aleksey19988_go-project-244

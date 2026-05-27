@@ -18,7 +18,7 @@ func TestStorage_SetRawData(t *testing.T) {
 	err := s.SetRawData()
 	assert.Error(t, err)
 
-	s = NewStorage("../../testdata/fixture/file1.json", "../../testdata/fixture/file2.json")
+	s = NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
 	err = s.SetRawData()
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(s.RawData))
@@ -26,7 +26,7 @@ func TestStorage_SetRawData(t *testing.T) {
 
 func TestStorage_CreateMapsFromData(t *testing.T) {
 	t.Run("Invalid file to create maps", func(t *testing.T) {
-		s := NewStorage("../../testdata/fixture/file.txt", "../../testdata/fixture/file2.json")
+		s := NewStorage("../../testdata/fixture/file.txt", "../../testdata/fixture/json/file2.json")
 		err := s.SetRawData()
 		assert.NoError(t, err)
 		_, err = s.CreateMapsFromData()
@@ -34,7 +34,7 @@ func TestStorage_CreateMapsFromData(t *testing.T) {
 	})
 
 	t.Run("Valid files", func(t *testing.T) {
-		s := NewStorage("../../testdata/fixture/file1.json", "../../testdata/fixture/file2.json")
+		s := NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
 		err := s.SetRawData()
 		assert.NoError(t, err)
 		maps, err := s.CreateMapsFromData()

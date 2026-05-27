@@ -61,7 +61,7 @@ func TestFormatOutput(t *testing.T) {
 	})
 }
 func TestDiff(t *testing.T) {
-	s := storage.NewStorage("../../testdata/fixture/file1.json", "../../testdata/fixture/file2.json")
+	s := storage.NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
 	err := s.SetRawData()
 	require.NoError(t, err)
 
@@ -79,7 +79,7 @@ func TestDiff(t *testing.T) {
 	}, fields[1])
 }
 func TestParse(t *testing.T) {
-	s := storage.NewStorage("../../testdata/fixture/file1.json", "../../testdata/fixture/file2.json")
+	s := storage.NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
 	res, err := Parse(s, "")
 	require.NoError(t, err)
 	assert.Equal(t, res, "{\n  - follow: false\n    host: hexlet.io\n  - proxy: 123.234.53.22\n  - timeout: 50\n  + timeout: 20\n  + verbose: true\n}")

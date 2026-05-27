@@ -9,15 +9,26 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-	err := Validate("")
+	_, err := storage.NewStorage("", "")
 	require.Error(t, err)
-	assert.Equal(t, "path to file is empty", err.Error())
+	assert.Equal(t, "path to file 1 is empty", err.Error())
 
-	err = Validate("/path/to/file")
+	_, err = storage.NewStorage("path.json", "")
 	require.Error(t, err)
-	assert.Equal(t, "path to file must have .json extension", err.Error())
+	assert.Equal(t, "path to file 2 is empty", err.Error())
 
-	err = Validate("/path/to/file.json")
+	_, err = storage.NewStorage("/path/to/file", "")
+	require.Error(t, err)
+	assert.Equal(t, "path to file 1 must have .json or .yaml extension", err.Error())
+
+	_, err = storage.NewStorage("/path/to/file.json", "/path/to/file.yaml")
+	require.Error(t, err)
+	assert.Equal(t, "files must have one extension", err.Error())
+
+	_, err = storage.NewStorage("/path/to/file.json", "/path/to/file.json")
+	require.NoError(t, err)
+
+	_, err = storage.NewStorage("/path/to/file.yaml", "/path/to/file.yaml")
 	require.NoError(t, err)
 }
 func TestGetOutputString(t *testing.T) {
@@ -35,7 +46,6 @@ func TestFormatOutput(t *testing.T) {
 		output := FormatOutput([]Field{f}, "")
 		assert.Equal(t, "{\n  + Test name: 195\n}", output)
 	})
-
 	t.Run("Test remove value", func(t *testing.T) {
 		f := Field{
 			Name:         "Some name",
@@ -47,7 +57,6 @@ func TestFormatOutput(t *testing.T) {
 		output := FormatOutput([]Field{f}, "")
 		assert.Equal(t, "{\n  - Some name: some value\n}", output)
 	})
-
 	t.Run("Equal values", func(t *testing.T) {
 		f := Field{
 			Name:         "Title",
@@ -61,25 +70,51 @@ func TestFormatOutput(t *testing.T) {
 	})
 }
 func TestDiff(t *testing.T) {
-	s := storage.NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
-	err := s.SetRawData()
-	require.NoError(t, err)
+	t.Run("Test json", func(t *testing.T) {
+		s, err := storage.NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
+		require.NoError(t, err)
 
-	maps, err := s.CreateMapsFromData()
-	require.NoError(t, err)
+		err = s.SetRawData()
+		require.NoError(t, err)
 
-	fields, err := Diff(maps)
-	require.NoError(t, err)
-	assert.Equal(t, 6, len(fields))
-	assert.Equal(t, Field{
-		Name:         "host",
-		TypeOfChange: "",
-		OldValue:     "hexlet.io",
-		NewValue:     "hexlet.io",
-	}, fields[1])
+		maps, err := s.CreateMapsFromData()
+		require.NoError(t, err)
+
+		fields, err := Diff(maps)
+		require.NoError(t, err)
+		assert.Equal(t, 6, len(fields))
+		assert.Equal(t, Field{
+			Name:         "host",
+			TypeOfChange: "",
+			OldValue:     "hexlet.io",
+			NewValue:     "hexlet.io",
+		}, fields[1])
+	})
+	t.Run("Test yaml", func(t *testing.T) {
+		s, err := storage.NewStorage("../../testdata/fixture/yaml/file1.yaml", "../../testdata/fixture/yaml/file2.yaml")
+		require.NoError(t, err)
+
+		err = s.SetRawData()
+		require.NoError(t, err)
+
+		maps, err := s.CreateMapsFromData()
+		require.NoError(t, err)
+
+		fields, err := Diff(maps)
+		require.NoError(t, err)
+		assert.Equal(t, 6, len(fields))
+		assert.Equal(t, Field{
+			Name:         "host",
+			TypeOfChange: "",
+			OldValue:     "hexlet.io",
+			NewValue:     "hexlet.io",
+		}, fields[1])
+	})
 }
 func TestParse(t *testing.T) {
-	s := storage.NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
+	s, err := storage.NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
+	require.NoError(t, err)
+
 	res, err := Parse(s, "")
 	require.NoError(t, err)
 	assert.Equal(t, res, "{\n  - follow: false\n    host: hexlet.io\n  - proxy: 123.234.53.22\n  - timeout: 50\n  + timeout: 20\n  + verbose: true\n}")

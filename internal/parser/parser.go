@@ -2,9 +2,7 @@ package parser
 
 import (
 	"code/internal/storage"
-	"errors"
 	"fmt"
-	"path/filepath"
 	"slices"
 )
 
@@ -21,13 +19,6 @@ const (
 )
 
 func Parse(s *storage.Storage, format string) (string, error) {
-	for _, path := range s.GetPaths() {
-		err := Validate(path)
-		if err != nil {
-			return "", err
-		}
-	}
-
 	err := s.SetRawData()
 	if err != nil {
 		return "", err
@@ -69,18 +60,6 @@ func FormatOutput(fields []Field, format string) string {
 }
 func GetOutputString(typeOfChange, name string, value any) string {
 	return fmt.Sprintf("  %s %s: %v\n", typeOfChange, name, value)
-}
-func Validate(path string) error {
-	if path == "" {
-		return errors.New("path to file is empty")
-	}
-
-	ext1 := filepath.Ext(path)
-	if ext1 != ".json" {
-		return errors.New("path to file must have .json extension")
-	}
-
-	return nil
 }
 func Diff(maps []map[string]any) ([]Field, error) {
 	var fields []Field

@@ -5,4 +5,7 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=aleksey19988_go-project-244&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=aleksey19988_go-project-244)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=aleksey19988_go-project-244&metric=coverage)](https://sonarcloud.io/summary/new_code?id=aleksey19988_go-project-244)
 ### Ascinema
-[![asciicast](https://asciinema.org/a/6cJenHDQoiEsLEeW.svg)](https://asciinema.org/a/6cJenHDQoiEsLEeW)
+#### Work with json files
+[![asciicast](https://asciinema.org/a/6JpClq1pBcALxu6G.svg)](https://asciinema.org/a/6JpClq1pBcALxu6G)
+#### Work with yaml files
+[![asciicast](https://asciinema.org/a/gxS9m3UIdMJMXAkv.svg)](https://asciinema.org/a/gxS9m3UIdMJMXAkv)

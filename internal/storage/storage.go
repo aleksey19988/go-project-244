@@ -12,6 +12,7 @@ import (
 
 const (
 	YamlExt = ".yaml"
+	YmlExt  = ".yml"
 	JsonExt = ".json"
 )
 
@@ -31,7 +32,7 @@ func NewStorage(path1, path2 string) (*Storage, error) {
 		}
 
 		ext := filepath.Ext(path)
-		if ext != JsonExt && ext != YamlExt {
+		if ext != JsonExt && ext != YamlExt && ext != YmlExt {
 			return nil, fmt.Errorf("path to file %d must have .json or .yaml extension", key+1)
 		}
 
@@ -65,7 +66,7 @@ func (s *Storage) CreateMapsFromData() ([]map[string]any, error) {
 			if err := json.Unmarshal(data, &m); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal file #%d: %w", i+1, err)
 			}
-		case YamlExt:
+		case YamlExt, YmlExt:
 			if err := yaml.Unmarshal(data, &m); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal file #%d: %w", i+1, err)
 			}

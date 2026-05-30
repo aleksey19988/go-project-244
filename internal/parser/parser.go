@@ -4,13 +4,16 @@ import (
 	"code/internal/storage"
 	"fmt"
 	"slices"
+	"sort"
+	"strings"
 )
 
 type Field struct {
 	Name         string
 	TypeOfChange string
-	OldValue     any
-	NewValue     any
+	Value        any
+	Deep         int
+	Children     []Field
 }
 
 const (
@@ -29,7 +32,7 @@ func Parse(s *storage.Storage, format string) (string, error) {
 		return "", err
 	}
 
-	fields, err := Diff(mapsWithData)
+	fields, err := Diff(mapsWithData, 1)
 	if err != nil {
 		return "", err
 	}
@@ -43,88 +46,187 @@ func FormatOutput(fields []Field, format string) string {
 	res := "{\n"
 
 	for _, field := range fields {
-		if field.OldValue == field.NewValue {
-			res += fmt.Sprintf("    %s: %v\n", field.Name, field.NewValue)
-		} else {
-			if field.OldValue == nil {
-				res += GetOutputString(field.TypeOfChange, field.Name, field.NewValue)
-			} else {
-				res += GetOutputString(field.TypeOfChange, field.Name, field.OldValue)
-			}
-		}
+		res += GetOutputString(field)
 	}
 
 	res += "}"
 
 	return res
 }
-func GetOutputString(typeOfChange, name string, value any) string {
-	return fmt.Sprintf("  %s %s: %v\n", typeOfChange, name, value)
+func GetOutputString(f Field) string {
+	res := ""
+
+	marginsCount := f.Deep*4 - 2
+	if len(f.TypeOfChange) == 0 {
+		f.TypeOfChange = " "
+	}
+
+	if f.Children != nil {
+		res = fmt.Sprintf("%s%s %s: {\n", strings.Repeat(" ", marginsCount), f.TypeOfChange, f.Name)
+
+		for _, child := range f.Children {
+			res += GetOutputString(child)
+		}
+
+		res += fmt.Sprintf("%s  }\n", strings.Repeat(" ", marginsCount))
+	} else {
+		if f.Value == nil {
+			f.Value = "null"
+		}
+
+		res = fmt.Sprintf("%s%s %s: %v\n", strings.Repeat(" ", marginsCount), f.TypeOfChange, f.Name, f.Value)
+	}
+
+	return res
 }
-func Diff(maps []map[string]any) ([]Field, error) {
+func Diff(pair []map[string]any, deep int) ([]Field, error) {
 	var fields []Field
 
-	keys := getCommonKeys(maps)
+	keys := getAllKeys(pair)
 	slices.Sort(keys)
 
 	for _, k := range keys {
-		isExistsInFirst, isExistsInSecond := false, false
-		if _, ok := maps[0][k]; ok {
-			isExistsInFirst = true
-		}
+		firstFieldValue, isKeyExistsInFirst := pair[0][k]
+		secondFieldValue, isKeyExistsInSecond := pair[1][k]
 
-		if _, ok := maps[1][k]; ok {
-			isExistsInSecond = true
-		}
+		firstMap, firstIsMap := firstFieldValue.(map[string]any)
+		secondMap, secondIsMap := secondFieldValue.(map[string]any)
 
-		if isExistsInFirst && isExistsInSecond {
-			if maps[0][k] == maps[1][k] {
+		if isKeyExistsInFirst && isKeyExistsInSecond {
+			// ключ есть в обоих файлах
+			var children []Field
+			var err error
+
+			if firstIsMap && secondIsMap {
+				children, err = Diff([]map[string]any{
+					firstMap,
+					secondMap,
+				}, deep+1)
+				if err != nil {
+					return nil, err
+				}
+				fields = append(fields, Field{
+					Name:     k,
+					Deep:     deep,
+					Children: children,
+				})
+				continue
+			} else if firstIsMap {
 				fields = append(fields, Field{
 					Name:         k,
-					TypeOfChange: "",
-					OldValue:     maps[0][k],
-					NewValue:     maps[1][k],
+					Deep:         deep,
+					TypeOfChange: Removed,
+					Children:     getNestedFields(firstMap, deep+1),
 				})
-			} else {
+				fields = append(fields, Field{
+					Name:         k,
+					Deep:         deep,
+					TypeOfChange: Added,
+					Value:        secondFieldValue,
+				})
+			} else if secondIsMap {
+				fields = append(fields, Field{
+					Name:         k,
+					Deep:         deep,
+					TypeOfChange: Removed,
+					Value:        firstFieldValue,
+				})
+				fields = append(fields, Field{
+					Name:         k,
+					Deep:         deep,
+					TypeOfChange: Added,
+					Children:     getNestedFields(secondMap, deep+1),
+				})
+			} else if firstFieldValue != secondFieldValue {
 				fields = append(fields, Field{
 					Name:         k,
 					TypeOfChange: Removed,
-					OldValue:     maps[0][k],
-					NewValue:     nil,
+					Value:        firstFieldValue,
+					Deep:         deep,
 				})
 				fields = append(fields, Field{
 					Name:         k,
 					TypeOfChange: Added,
-					OldValue:     nil,
-					NewValue:     maps[1][k],
+					Value:        secondFieldValue,
+					Deep:         deep,
+				})
+			} else {
+				fields = append(fields, Field{
+					Name:  k,
+					Value: firstFieldValue,
+					Deep:  deep,
 				})
 			}
-		} else if isExistsInFirst {
-			fields = append(fields, Field{
-				Name:         k,
-				TypeOfChange: Removed,
-				OldValue:     maps[0][k],
-				NewValue:     nil,
-			})
-		} else if isExistsInSecond {
-			fields = append(fields, Field{
-				Name:         k,
-				TypeOfChange: Added,
-				OldValue:     nil,
-				NewValue:     maps[1][k],
-			})
+		} else if isKeyExistsInFirst {
+			// ключ есть только в первом, значит был удалён
+			fields = append(fields, getRemovedOrAddedField(k, firstFieldValue, Removed, deep))
+		} else if isKeyExistsInSecond {
+			// ключ есть только во втором, значит был добавлен
+			fields = append(fields, getRemovedOrAddedField(k, secondFieldValue, Added, deep))
 		}
 	}
 
 	return fields, nil
 }
-func getCommonKeys(maps []map[string]any) []string {
+func getRemovedOrAddedField(
+	fieldName string,
+	value any,
+	typeOfChange string,
+	deep int,
+) Field {
+	if mapValue, isMap := value.(map[string]any); isMap {
+		return Field{
+			Name:         fieldName,
+			TypeOfChange: typeOfChange,
+			Deep:         deep,
+			Children:     getNestedFields(mapValue, deep+1),
+		}
+	} else {
+		return Field{
+			Name:         fieldName,
+			TypeOfChange: typeOfChange,
+			Value:        value,
+			Deep:         deep,
+		}
+	}
+}
+func getNestedFields(m map[string]any, deep int) []Field {
+	fields := []Field{}
+
+	keys := []string{}
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		mapValue, ok := m[key].(map[string]any)
+		if ok {
+			fields = append(fields, Field{
+				Name:     key,
+				Children: getNestedFields(mapValue, deep+1),
+				Deep:     deep,
+			})
+		} else {
+			fields = append(fields, Field{
+				Name:  key,
+				Value: m[key],
+				Deep:  deep,
+			})
+		}
+	}
+
+	return fields
+}
+func getAllKeys(maps []map[string]any) []string {
 	res := make([]string, 0)
+	keys := map[string]struct{}{}
 
 	for _, m := range maps {
 		for k := range m {
-			if !slices.Contains(res, k) {
+			if _, ok := keys[k]; !ok {
 				res = append(res, k)
+				keys[k] = struct{}{}
 			}
 		}
 	}

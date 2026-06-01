@@ -32,40 +32,55 @@ func TestValidate(t *testing.T) {
 	require.NoError(t, err)
 }
 func TestGetOutputString(t *testing.T) {
-	assert.Equal(t, "  - name: value\n", GetOutputString("-", "name", "value"))
+	f := Field{
+		Name:         "field-name",
+		TypeOfChange: Added,
+		Value:        "field-value",
+		Deep:         1,
+		Children:     nil,
+	}
+	res, err := GetOutputString(f)
+	require.NoError(t, err)
+	assert.Equal(t, "  + field-name: field-value\n", res)
 }
 func TestFormatOutput(t *testing.T) {
 	t.Run("Test add value", func(t *testing.T) {
 		f := Field{
 			Name:         "Test name",
 			TypeOfChange: "+",
-			OldValue:     nil,
-			NewValue:     195,
+			Value:        195,
 		}
 
-		output := FormatOutput([]Field{f}, "")
+		output, err := FormatOutput([]Field{f}, "")
+		require.Error(t, err)
+		assert.Equal(t, "deep is negative or zero", err.Error())
+
+		f.Deep = 1
+		output, err = FormatOutput([]Field{f}, "")
 		assert.Equal(t, "{\n  + Test name: 195\n}", output)
 	})
 	t.Run("Test remove value", func(t *testing.T) {
 		f := Field{
 			Name:         "Some name",
-			TypeOfChange: "-",
-			OldValue:     "some value",
-			NewValue:     nil,
+			TypeOfChange: Removed,
+			Value:        "some value",
+			Deep:         1,
 		}
 
-		output := FormatOutput([]Field{f}, "")
+		output, err := FormatOutput([]Field{f}, "")
+		require.NoError(t, err)
 		assert.Equal(t, "{\n  - Some name: some value\n}", output)
 	})
 	t.Run("Equal values", func(t *testing.T) {
 		f := Field{
 			Name:         "Title",
 			TypeOfChange: "",
-			OldValue:     false,
-			NewValue:     false,
+			Value:        false,
+			Deep:         1,
 		}
 
-		output := FormatOutput([]Field{f}, "")
+		output, err := FormatOutput([]Field{f}, "")
+		require.NoError(t, err)
 		assert.Equal(t, "{\n    Title: false\n}", output)
 	})
 }
@@ -80,15 +95,34 @@ func TestDiff(t *testing.T) {
 		maps, err := s.CreateMapsFromData()
 		require.NoError(t, err)
 
-		fields, err := Diff(maps)
+		fields, err := Diff(maps, 1)
 		require.NoError(t, err)
-		assert.Equal(t, 6, len(fields))
-		assert.Equal(t, Field{
-			Name:         "host",
-			TypeOfChange: "",
-			OldValue:     "hexlet.io",
-			NewValue:     "hexlet.io",
-		}, fields[1])
+		assert.Equal(t, 4, len(fields))
+
+		expectedField := Field{
+			Name:         "group2",
+			TypeOfChange: "-",
+			Deep:         1,
+			Children: []Field{
+				Field{
+					Name:  "abc",
+					Value: float64(12345),
+					Deep:  2,
+				},
+				Field{
+					Name: "deep",
+					Deep: 2,
+					Children: []Field{
+						Field{
+							Name:  "id",
+							Value: float64(45),
+							Deep:  3,
+						},
+					},
+				},
+			},
+		}
+		assert.Equal(t, expectedField, fields[2])
 	})
 	t.Run("Test yaml", func(t *testing.T) {
 		s, err := storage.NewStorage("../../testdata/fixture/yaml/file1.yaml", "../../testdata/fixture/yaml/file2.yaml")
@@ -100,15 +134,33 @@ func TestDiff(t *testing.T) {
 		maps, err := s.CreateMapsFromData()
 		require.NoError(t, err)
 
-		fields, err := Diff(maps)
+		fields, err := Diff(maps, 1)
 		require.NoError(t, err)
-		assert.Equal(t, 6, len(fields))
-		assert.Equal(t, Field{
-			Name:         "host",
-			TypeOfChange: "",
-			OldValue:     "hexlet.io",
-			NewValue:     "hexlet.io",
-		}, fields[1])
+		assert.Equal(t, 4, len(fields))
+		expectedField := Field{
+			Name:         "group2",
+			TypeOfChange: "-",
+			Deep:         1,
+			Children: []Field{
+				Field{
+					Name:  "abc",
+					Value: 12345,
+					Deep:  2,
+				},
+				Field{
+					Name: "deep",
+					Deep: 2,
+					Children: []Field{
+						Field{
+							Name:  "id",
+							Value: 45,
+							Deep:  3,
+						},
+					},
+				},
+			},
+		}
+		assert.Equal(t, expectedField, fields[2])
 	})
 }
 func TestParse(t *testing.T) {
@@ -117,5 +169,6 @@ func TestParse(t *testing.T) {
 
 	res, err := Parse(s, "")
 	require.NoError(t, err)
-	assert.Equal(t, res, "{\n  - follow: false\n    host: hexlet.io\n  - proxy: 123.234.53.22\n  - timeout: 50\n  + timeout: 20\n  + verbose: true\n}")
+	expectedOutput := "{\n    common: {\n      + follow: false\n        setting1: Value 1\n      - setting2: 200\n      - setting3: true\n      + setting3: null\n      + setting4: blah blah\n      + setting5: {\n            key5: value5\n        }\n        setting6: {\n            doge: {\n              - wow: \n              + wow: so much\n            }\n            key: value\n          + ops: vops\n        }\n    }\n    group1: {\n      - baz: bas\n      + baz: bars\n        foo: bar\n      - nest: {\n            key: value\n        }\n      + nest: str\n    }\n  - group2: {\n        abc: 12345\n        deep: {\n            id: 45\n        }\n    }\n  + group3: {\n        deep: {\n            id: {\n                number: 45\n            }\n        }\n        fee: 100500\n    }\n}"
+	assert.Equal(t, res, expectedOutput)
 }

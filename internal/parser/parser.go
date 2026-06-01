@@ -2,6 +2,7 @@ package parser
 
 import (
 	"code/internal/storage"
+	"errors"
 	"fmt"
 	"slices"
 	"sort"
@@ -37,24 +38,35 @@ func Parse(s *storage.Storage, format string) (string, error) {
 		return "", err
 	}
 
-	formatted := FormatOutput(fields, format)
+	formatted, err := FormatOutput(fields, format)
+	if err != nil {
+		return "", err
+	}
 
 	return formatted, nil
 }
 
-func FormatOutput(fields []Field, format string) string {
+func FormatOutput(fields []Field, format string) (string, error) {
 	res := "{\n"
 
 	for _, field := range fields {
-		res += GetOutputString(field)
+		fieldData, err := GetOutputString(field)
+		if err != nil {
+			return "", err
+		}
+		res += fieldData
 	}
 
 	res += "}"
 
-	return res
+	return res, nil
 }
-func GetOutputString(f Field) string {
+func GetOutputString(f Field) (string, error) {
 	res := ""
+
+	if f.Deep <= 0 {
+		return "", errors.New("deep is negative or zero")
+	}
 
 	marginsCount := f.Deep*4 - 2
 	if len(f.TypeOfChange) == 0 {
@@ -65,7 +77,11 @@ func GetOutputString(f Field) string {
 		res = fmt.Sprintf("%s%s %s: {\n", strings.Repeat(" ", marginsCount), f.TypeOfChange, f.Name)
 
 		for _, child := range f.Children {
-			res += GetOutputString(child)
+			childData, err := GetOutputString(child)
+			if err != nil {
+				return "", err
+			}
+			res += childData
 		}
 
 		res += fmt.Sprintf("%s  }\n", strings.Repeat(" ", marginsCount))
@@ -77,7 +93,7 @@ func GetOutputString(f Field) string {
 		res = fmt.Sprintf("%s%s %s: %v\n", strings.Repeat(" ", marginsCount), f.TypeOfChange, f.Name, f.Value)
 	}
 
-	return res
+	return res, nil
 }
 func Diff(pair []map[string]any, deep int) ([]Field, error) {
 	var fields []Field

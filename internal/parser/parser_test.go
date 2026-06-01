@@ -51,12 +51,13 @@ func TestFormatOutput(t *testing.T) {
 			Value:        195,
 		}
 
-		output, err := FormatOutput([]Field{f}, "")
+		_, err := FormatOutput([]Field{f}, "")
 		require.Error(t, err)
 		assert.Equal(t, "deep is negative or zero", err.Error())
 
 		f.Deep = 1
-		output, err = FormatOutput([]Field{f}, "")
+		output, err := FormatOutput([]Field{f}, "")
+		require.NoError(t, err)
 		assert.Equal(t, "{\n  + Test name: 195\n}", output)
 	})
 	t.Run("Test remove value", func(t *testing.T) {

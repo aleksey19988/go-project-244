@@ -22,12 +22,11 @@ func TestStorage_SetRawData(t *testing.T) {
 
 	err = s.SetRawData()
 	assert.Error(t, err)
-
-	s, err = NewStorage("", "path2.json")
+	_, err = NewStorage("", "path2.json")
 	require.Error(t, err)
 	assert.Equal(t, "path to file 1 is empty", err.Error())
 
-	s, err = NewStorage("path1.json", "path2.yaml")
+	_, err = NewStorage("path1.json", "path2.yaml")
 	require.Error(t, err)
 	assert.Equal(t, "files must have one extension", err.Error())
 

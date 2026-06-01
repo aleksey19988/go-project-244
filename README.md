@@ -9,3 +9,5 @@
 [![json](https://asciinema.org/a/6JpClq1pBcALxu6G.svg)](https://asciinema.org/a/6JpClq1pBcALxu6G)
 #### Work with yaml files
 [![yaml](https://asciinema.org/a/gxS9m3UIdMJMXAkv.svg)](https://asciinema.org/a/gxS9m3UIdMJMXAkv)
+#### Recursive comparison
+[![recursive](https://asciinema.org/a/t5j4a8szJnYfdXPb.svg)](https://asciinema.org/a/t5j4a8szJnYfdXPb)

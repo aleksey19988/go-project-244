@@ -38,6 +38,10 @@ func Parse(s *storage.Storage, format string) (string, error) {
 		return "", err
 	}
 
+	if len(format) == 0 {
+		format = "stylish"
+	}
+
 	formatted, err := FormatOutput(fields, format)
 	if err != nil {
 		return "", err

@@ -1,21 +1,11 @@
 package parser
 
 import (
+	"code/internal/formatters"
 	"code/internal/storage"
-	"errors"
-	"fmt"
 	"slices"
 	"sort"
-	"strings"
 )
-
-type Field struct {
-	Name         string
-	TypeOfChange string
-	Value        any
-	Deep         int
-	Children     []Field
-}
 
 const (
 	Added   = "+"
@@ -39,10 +29,15 @@ func Parse(s *storage.Storage, format string) (string, error) {
 	}
 
 	if len(format) == 0 {
-		format = "stylish"
+		format = formatters.DefaultOutputFormat
 	}
 
-	formatted, err := FormatOutput(fields, format)
+	f, err := formatters.NewFormatter(format)
+	if err != nil {
+		return "", err
+	}
+
+	formatted, err := f.GetOutput(fields)
 	if err != nil {
 		return "", err
 	}
@@ -50,57 +45,8 @@ func Parse(s *storage.Storage, format string) (string, error) {
 	return formatted, nil
 }
 
-func FormatOutput(fields []Field, format string) (string, error) {
-	res := "{\n"
-
-	for _, field := range fields {
-		fieldData, err := GetOutputString(field)
-		if err != nil {
-			return "", err
-		}
-		res += fieldData
-	}
-
-	res += "}"
-
-	return res, nil
-}
-func GetOutputString(f Field) (string, error) {
-	res := ""
-
-	if f.Deep <= 0 {
-		return "", errors.New("deep is negative or zero")
-	}
-
-	marginsCount := f.Deep*4 - 2
-	if len(f.TypeOfChange) == 0 {
-		f.TypeOfChange = " "
-	}
-
-	if f.Children != nil {
-		res = fmt.Sprintf("%s%s %s: {\n", strings.Repeat(" ", marginsCount), f.TypeOfChange, f.Name)
-
-		for _, child := range f.Children {
-			childData, err := GetOutputString(child)
-			if err != nil {
-				return "", err
-			}
-			res += childData
-		}
-
-		res += fmt.Sprintf("%s  }\n", strings.Repeat(" ", marginsCount))
-	} else {
-		if f.Value == nil {
-			f.Value = "null"
-		}
-
-		res = fmt.Sprintf("%s%s %s: %v\n", strings.Repeat(" ", marginsCount), f.TypeOfChange, f.Name, f.Value)
-	}
-
-	return res, nil
-}
-func Diff(pair []map[string]any, deep int) ([]Field, error) {
-	var fields []Field
+func Diff(pair []map[string]any, deep int) ([]formatters.Field, error) {
+	var fields []formatters.Field
 
 	keys := getAllKeys(pair)
 	slices.Sort(keys)
@@ -114,7 +60,7 @@ func Diff(pair []map[string]any, deep int) ([]Field, error) {
 
 		if isKeyExistsInFirst && isKeyExistsInSecond {
 			// ключ есть в обоих файлах
-			var children []Field
+			var children []formatters.Field
 			var err error
 
 			if firstIsMap && secondIsMap {
@@ -125,53 +71,53 @@ func Diff(pair []map[string]any, deep int) ([]Field, error) {
 				if err != nil {
 					return nil, err
 				}
-				fields = append(fields, Field{
+				fields = append(fields, formatters.Field{
 					Name:     k,
 					Deep:     deep,
 					Children: children,
 				})
 				continue
 			} else if firstIsMap {
-				fields = append(fields, Field{
+				fields = append(fields, formatters.Field{
 					Name:         k,
 					Deep:         deep,
 					TypeOfChange: Removed,
 					Children:     getNestedFields(firstMap, deep+1),
 				})
-				fields = append(fields, Field{
+				fields = append(fields, formatters.Field{
 					Name:         k,
 					Deep:         deep,
 					TypeOfChange: Added,
 					Value:        secondFieldValue,
 				})
 			} else if secondIsMap {
-				fields = append(fields, Field{
+				fields = append(fields, formatters.Field{
 					Name:         k,
 					Deep:         deep,
 					TypeOfChange: Removed,
 					Value:        firstFieldValue,
 				})
-				fields = append(fields, Field{
+				fields = append(fields, formatters.Field{
 					Name:         k,
 					Deep:         deep,
 					TypeOfChange: Added,
 					Children:     getNestedFields(secondMap, deep+1),
 				})
 			} else if firstFieldValue != secondFieldValue {
-				fields = append(fields, Field{
+				fields = append(fields, formatters.Field{
 					Name:         k,
 					TypeOfChange: Removed,
 					Value:        firstFieldValue,
 					Deep:         deep,
 				})
-				fields = append(fields, Field{
+				fields = append(fields, formatters.Field{
 					Name:         k,
 					TypeOfChange: Added,
 					Value:        secondFieldValue,
 					Deep:         deep,
 				})
 			} else {
-				fields = append(fields, Field{
+				fields = append(fields, formatters.Field{
 					Name:  k,
 					Value: firstFieldValue,
 					Deep:  deep,
@@ -193,16 +139,16 @@ func getRemovedOrAddedField(
 	value any,
 	typeOfChange string,
 	deep int,
-) Field {
+) formatters.Field {
 	if mapValue, isMap := value.(map[string]any); isMap {
-		return Field{
+		return formatters.Field{
 			Name:         fieldName,
 			TypeOfChange: typeOfChange,
 			Deep:         deep,
 			Children:     getNestedFields(mapValue, deep+1),
 		}
 	} else {
-		return Field{
+		return formatters.Field{
 			Name:         fieldName,
 			TypeOfChange: typeOfChange,
 			Value:        value,
@@ -210,10 +156,10 @@ func getRemovedOrAddedField(
 		}
 	}
 }
-func getNestedFields(m map[string]any, deep int) []Field {
-	fields := []Field{}
+func getNestedFields(m map[string]any, deep int) []formatters.Field {
+	var fields []formatters.Field
 
-	keys := []string{}
+	var keys []string
 	for k := range m {
 		keys = append(keys, k)
 	}
@@ -222,13 +168,13 @@ func getNestedFields(m map[string]any, deep int) []Field {
 	for _, key := range keys {
 		mapValue, ok := m[key].(map[string]any)
 		if ok {
-			fields = append(fields, Field{
+			fields = append(fields, formatters.Field{
 				Name:     key,
 				Children: getNestedFields(mapValue, deep+1),
 				Deep:     deep,
 			})
 		} else {
-			fields = append(fields, Field{
+			fields = append(fields, formatters.Field{
 				Name:  key,
 				Value: m[key],
 				Deep:  deep,

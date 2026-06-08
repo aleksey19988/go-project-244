@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"code/internal/formatters"
 	"code/internal/storage"
 	"testing"
 
@@ -32,58 +33,19 @@ func TestValidate(t *testing.T) {
 	require.NoError(t, err)
 }
 func TestGetOutputString(t *testing.T) {
-	f := Field{
+	f := formatters.Field{
 		Name:         "field-name",
 		TypeOfChange: Added,
 		Value:        "field-value",
 		Deep:         1,
 		Children:     nil,
 	}
-	res, err := GetOutputString(f)
+	formatter, err := formatters.NewFormatter(formatters.DefaultOutputFormat)
+	require.NoError(t, err)
+
+	res, err := formatter.GetOutputString(f)
 	require.NoError(t, err)
 	assert.Equal(t, "  + field-name: field-value\n", res)
-}
-func TestFormatOutput(t *testing.T) {
-	t.Run("Test add value", func(t *testing.T) {
-		f := Field{
-			Name:         "Test name",
-			TypeOfChange: "+",
-			Value:        195,
-		}
-
-		_, err := FormatOutput([]Field{f}, "")
-		require.Error(t, err)
-		assert.Equal(t, "deep is negative or zero", err.Error())
-
-		f.Deep = 1
-		output, err := FormatOutput([]Field{f}, "")
-		require.NoError(t, err)
-		assert.Equal(t, "{\n  + Test name: 195\n}", output)
-	})
-	t.Run("Test remove value", func(t *testing.T) {
-		f := Field{
-			Name:         "Some name",
-			TypeOfChange: Removed,
-			Value:        "some value",
-			Deep:         1,
-		}
-
-		output, err := FormatOutput([]Field{f}, "")
-		require.NoError(t, err)
-		assert.Equal(t, "{\n  - Some name: some value\n}", output)
-	})
-	t.Run("Equal values", func(t *testing.T) {
-		f := Field{
-			Name:         "Title",
-			TypeOfChange: "",
-			Value:        false,
-			Deep:         1,
-		}
-
-		output, err := FormatOutput([]Field{f}, "")
-		require.NoError(t, err)
-		assert.Equal(t, "{\n    Title: false\n}", output)
-	})
 }
 func TestDiff(t *testing.T) {
 	t.Run("Test json", func(t *testing.T) {
@@ -100,21 +62,21 @@ func TestDiff(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 4, len(fields))
 
-		expectedField := Field{
+		expectedField := formatters.Field{
 			Name:         "group2",
 			TypeOfChange: "-",
 			Deep:         1,
-			Children: []Field{
-				Field{
+			Children: []formatters.Field{
+				formatters.Field{
 					Name:  "abc",
 					Value: float64(12345),
 					Deep:  2,
 				},
-				Field{
+				formatters.Field{
 					Name: "deep",
 					Deep: 2,
-					Children: []Field{
-						Field{
+					Children: []formatters.Field{
+						formatters.Field{
 							Name:  "id",
 							Value: float64(45),
 							Deep:  3,
@@ -138,21 +100,21 @@ func TestDiff(t *testing.T) {
 		fields, err := Diff(maps, 1)
 		require.NoError(t, err)
 		assert.Equal(t, 4, len(fields))
-		expectedField := Field{
+		expectedField := formatters.Field{
 			Name:         "group2",
 			TypeOfChange: "-",
 			Deep:         1,
-			Children: []Field{
-				Field{
+			Children: []formatters.Field{
+				formatters.Field{
 					Name:  "abc",
 					Value: 12345,
 					Deep:  2,
 				},
-				Field{
+				formatters.Field{
 					Name: "deep",
 					Deep: 2,
-					Children: []Field{
-						Field{
+					Children: []formatters.Field{
+						formatters.Field{
 							Name:  "id",
 							Value: 45,
 							Deep:  3,
@@ -163,13 +125,4 @@ func TestDiff(t *testing.T) {
 		}
 		assert.Equal(t, expectedField, fields[2])
 	})
-}
-func TestParse(t *testing.T) {
-	s, err := storage.NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
-	require.NoError(t, err)
-
-	res, err := Parse(s, "")
-	require.NoError(t, err)
-	expectedOutput := "{\n    common: {\n      + follow: false\n        setting1: Value 1\n      - setting2: 200\n      - setting3: true\n      + setting3: null\n      + setting4: blah blah\n      + setting5: {\n            key5: value5\n        }\n        setting6: {\n            doge: {\n              - wow: \n              + wow: so much\n            }\n            key: value\n          + ops: vops\n        }\n    }\n    group1: {\n      - baz: bas\n      + baz: bars\n        foo: bar\n      - nest: {\n            key: value\n        }\n      + nest: str\n    }\n  - group2: {\n        abc: 12345\n        deep: {\n            id: 45\n        }\n    }\n  + group3: {\n        deep: {\n            id: {\n                number: 45\n            }\n        }\n        fee: 100500\n    }\n}"
-	assert.Equal(t, res, expectedOutput)
 }

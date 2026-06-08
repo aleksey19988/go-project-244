@@ -32,7 +32,7 @@ func main() {
 				return err
 			}
 
-			res, err := parser.Parse(s, cmd.StringArg("format"))
+			res, err := parser.Parse(s, cmd.String("format"))
 			if err != nil {
 				return err
 			}

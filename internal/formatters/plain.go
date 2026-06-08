@@ -58,15 +58,3 @@ func (pf *PlainFormatter) GetOutputString(f Field) (string, error) {
 
 	return res, nil
 }
-
-//func getFullPath(f Field) string {
-//	res := f.Name
-//
-//	if f.Children != nil {
-//		for _, child := range f.Children {
-//			res += fmt.Sprintf(".%s", getFullPath(child))
-//		}
-//	}
-//
-//	return res
-//}

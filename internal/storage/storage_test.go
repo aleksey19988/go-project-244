@@ -16,11 +16,11 @@ func TestStorage_GetPaths(t *testing.T) {
 	assert.Equal(t, "path2.json", s.GetPaths()[1])
 }
 
-func TestStorage_SetRawData(t *testing.T) {
+func TestStorage_LoadFiles(t *testing.T) {
 	s, err := NewStorage("path1.json", "path2.json")
 	require.NoError(t, err)
 
-	err = s.SetRawData()
+	err = s.LoadFiles()
 	assert.Error(t, err)
 	_, err = NewStorage("", "path2.json")
 	require.Error(t, err)
@@ -32,7 +32,7 @@ func TestStorage_SetRawData(t *testing.T) {
 
 	s, err = NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
 	require.NoError(t, err)
-	err = s.SetRawData()
+	err = s.LoadFiles()
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(s.RawData))
 }
@@ -48,7 +48,7 @@ func TestStorage_CreateMapsFromData(t *testing.T) {
 		s, err := NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
 		require.NoError(t, err)
 
-		err = s.SetRawData()
+		err = s.LoadFiles()
 		assert.NoError(t, err)
 		maps, err := s.CreateMapsFromData()
 		assert.NoError(t, err)
@@ -75,7 +75,7 @@ func TestStorage_CreateMapsFromData(t *testing.T) {
 		s, err := NewStorage("../../testdata/fixture/yaml/file1.yaml", "../../testdata/fixture/yaml/file2.yaml")
 		require.NoError(t, err)
 
-		err = s.SetRawData()
+		err = s.LoadFiles()
 		assert.NoError(t, err)
 		maps, err := s.CreateMapsFromData()
 		assert.NoError(t, err)

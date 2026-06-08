@@ -1,29 +1,27 @@
 package formatters
 
 import (
+	"code/internal/diff"
 	"errors"
+	"strings"
 )
 
 const (
 	Added               = "+"
 	Removed             = "-"
+	Updated             = "~"
 	DefaultOutputFormat = "stylish"
 )
 
-type Field struct {
-	Name         string
-	TypeOfChange string
-	Value        any
-	Deep         int
-	Children     []Field
-}
-
 type Formatter interface {
-	GetOutput(fields []Field) (string, error)
-	GetOutputString(f Field) (string, error)
+	Format(fields []diff.Field) (string, error)
+	GetOutputString(f diff.Field, b strings.Builder) (string, error)
 }
 
 func NewFormatter(format string) (Formatter, error) {
+	if format == "" {
+		format = DefaultOutputFormat
+	}
 	switch format {
 	case "stylish":
 		return &StylishFormatter{}, nil

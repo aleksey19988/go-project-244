@@ -54,7 +54,7 @@ func (s *Storage) GetPaths() []string {
 }
 func (s *Storage) CreateMapsFromData() ([]map[string]any, error) {
 	if len(s.RawData) == 0 {
-		if err := s.SetRawData(); err != nil {
+		if err := s.LoadFiles(); err != nil {
 			return nil, err
 		}
 	}
@@ -76,7 +76,7 @@ func (s *Storage) CreateMapsFromData() ([]map[string]any, error) {
 
 	return result, nil
 }
-func (s *Storage) SetRawData() error {
+func (s *Storage) LoadFiles() error {
 	s.RawData = make([][]byte, 0, 2)
 
 	for _, path := range s.GetPaths() {

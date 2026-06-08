@@ -1,8 +1,10 @@
 package parser
 
 import (
+	"code/internal/diff"
 	"code/internal/formatters"
 	"code/internal/storage"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,17 +35,17 @@ func TestValidate(t *testing.T) {
 	require.NoError(t, err)
 }
 func TestGetOutputString(t *testing.T) {
-	f := formatters.Field{
-		Name:         "field-name",
-		TypeOfChange: Added,
-		Value:        "field-value",
-		Deep:         1,
-		Children:     nil,
+	f := diff.Field{
+		Name:     "field-name",
+		Status:   formatters.Added,
+		NewValue: "field-value",
+		Depth:    1,
+		Children: nil,
 	}
 	formatter, err := formatters.NewFormatter(formatters.DefaultOutputFormat)
 	require.NoError(t, err)
 
-	res, err := formatter.GetOutputString(f)
+	res, err := formatter.GetOutputString(f, strings.Builder{})
 	require.NoError(t, err)
 	assert.Equal(t, "  + field-name: field-value\n", res)
 }
@@ -52,7 +54,7 @@ func TestDiff(t *testing.T) {
 		s, err := storage.NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
 		require.NoError(t, err)
 
-		err = s.SetRawData()
+		err = s.LoadFiles()
 		require.NoError(t, err)
 
 		maps, err := s.CreateMapsFromData()
@@ -62,24 +64,24 @@ func TestDiff(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 4, len(fields))
 
-		expectedField := formatters.Field{
-			Name:         "group2",
-			TypeOfChange: "-",
-			Deep:         1,
-			Children: []formatters.Field{
-				formatters.Field{
-					Name:  "abc",
-					Value: float64(12345),
-					Deep:  2,
+		expectedField := diff.Field{
+			Name:   "group2",
+			Status: "-",
+			Depth:  1,
+			Children: []diff.Field{
+				{
+					Name:     "abc",
+					NewValue: float64(12345),
+					Depth:    2,
 				},
-				formatters.Field{
-					Name: "deep",
-					Deep: 2,
-					Children: []formatters.Field{
-						formatters.Field{
-							Name:  "id",
-							Value: float64(45),
-							Deep:  3,
+				{
+					Name:  "deep",
+					Depth: 2,
+					Children: []diff.Field{
+						{
+							Name:     "id",
+							NewValue: float64(45),
+							Depth:    3,
 						},
 					},
 				},
@@ -91,7 +93,7 @@ func TestDiff(t *testing.T) {
 		s, err := storage.NewStorage("../../testdata/fixture/yaml/file1.yaml", "../../testdata/fixture/yaml/file2.yaml")
 		require.NoError(t, err)
 
-		err = s.SetRawData()
+		err = s.LoadFiles()
 		require.NoError(t, err)
 
 		maps, err := s.CreateMapsFromData()
@@ -100,24 +102,24 @@ func TestDiff(t *testing.T) {
 		fields, err := Diff(maps, 1)
 		require.NoError(t, err)
 		assert.Equal(t, 4, len(fields))
-		expectedField := formatters.Field{
-			Name:         "group2",
-			TypeOfChange: "-",
-			Deep:         1,
-			Children: []formatters.Field{
-				formatters.Field{
-					Name:  "abc",
-					Value: 12345,
-					Deep:  2,
+		expectedField := diff.Field{
+			Name:   "group2",
+			Status: formatters.Removed,
+			Depth:  1,
+			Children: []diff.Field{
+				{
+					Name:     "abc",
+					NewValue: 12345,
+					Depth:    2,
 				},
-				formatters.Field{
-					Name: "deep",
-					Deep: 2,
-					Children: []formatters.Field{
-						formatters.Field{
-							Name:  "id",
-							Value: 45,
-							Deep:  3,
+				{
+					Name:  "deep",
+					Depth: 2,
+					Children: []diff.Field{
+						{
+							Name:     "id",
+							NewValue: 45,
+							Depth:    3,
 						},
 					},
 				},

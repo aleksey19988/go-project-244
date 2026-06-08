@@ -1,6 +1,7 @@
 package main
 
 import (
+	"code/internal/formatters"
 	"code/internal/parser"
 	"code/internal/storage"
 	"context"
@@ -24,6 +25,10 @@ func main() {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			if cmd.NArg() < 2 {
+				return cli.Exit("Not enough arguments (must be 2 arguments)", 1)
+			}
+
 			path1 := cmd.Args().Get(0)
 			path2 := cmd.Args().Get(1)
 
@@ -32,11 +37,32 @@ func main() {
 				return err
 			}
 
-			res, err := parser.Parse(s, cmd.String("format"))
+			err = s.LoadFiles()
 			if err != nil {
 				return err
 			}
-			fmt.Println(res)
+
+			maps, err := s.CreateMapsFromData()
+			if err != nil {
+				return err
+			}
+
+			fields, err := parser.Diff(maps, 1)
+			if err != nil {
+				return err
+			}
+
+			f, err := formatters.NewFormatter(cmd.String("format"))
+			if err != nil {
+				return err
+			}
+
+			result, err := f.Format(fields)
+			if err != nil {
+				return err
+			}
+
+			fmt.Println(result)
 			return nil
 		},
 	}

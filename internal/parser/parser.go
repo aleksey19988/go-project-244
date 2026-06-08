@@ -1,52 +1,14 @@
 package parser
 
 import (
+	"code/internal/diff"
 	"code/internal/formatters"
-	"code/internal/storage"
 	"slices"
 	"sort"
 )
 
-const (
-	Added   = "+"
-	Removed = "-"
-)
-
-func Parse(s *storage.Storage, format string) (string, error) {
-	err := s.SetRawData()
-	if err != nil {
-		return "", err
-	}
-
-	mapsWithData, err := s.CreateMapsFromData()
-	if err != nil {
-		return "", err
-	}
-
-	fields, err := Diff(mapsWithData, 1)
-	if err != nil {
-		return "", err
-	}
-
-	if len(format) == 0 {
-		format = formatters.DefaultOutputFormat
-	}
-
-	f, err := formatters.NewFormatter(format)
-	if err != nil {
-		return "", err
-	}
-
-	formatted, err := f.GetOutput(fields)
-	if err != nil {
-		return "", err
-	}
-
-	return formatted, nil
-}
-
-func Diff(pair []map[string]any, deep int) ([]formatters.Field, error) {
-	var fields []formatters.Field
+func Diff(pair []map[string]any, deep int) ([]diff.Field, error) {
+	var fields []diff.Field
 
 	keys := getAllKeys(pair)
 	slices.Sort(keys)
@@ -60,7 +22,7 @@ func Diff(pair []map[string]any, deep int) ([]formatters.Field, error) {
 
 		if isKeyExistsInFirst && isKeyExistsInSecond {
 			// ключ есть в обоих файлах
-			var children []formatters.Field
+			var children []diff.Field
 			var err error
 
 			if firstIsMap && secondIsMap {
@@ -71,64 +33,52 @@ func Diff(pair []map[string]any, deep int) ([]formatters.Field, error) {
 				if err != nil {
 					return nil, err
 				}
-				fields = append(fields, formatters.Field{
+				fields = append(fields, diff.Field{
 					Name:     k,
-					Deep:     deep,
+					Depth:    deep,
 					Children: children,
 				})
 				continue
 			} else if firstIsMap {
-				fields = append(fields, formatters.Field{
-					Name:         k,
-					Deep:         deep,
-					TypeOfChange: Removed,
-					Children:     getNestedFields(firstMap, deep+1),
-				})
-				fields = append(fields, formatters.Field{
-					Name:         k,
-					Deep:         deep,
-					TypeOfChange: Added,
-					Value:        secondFieldValue,
+				fields = append(fields, diff.Field{
+					Name:     k,
+					Depth:    deep,
+					Status:   formatters.Updated,
+					OldValue: getNestedFields(firstMap, deep+1),
+					NewValue: secondFieldValue,
+					Children: getNestedFields(firstMap, deep+1),
 				})
 			} else if secondIsMap {
-				fields = append(fields, formatters.Field{
-					Name:         k,
-					Deep:         deep,
-					TypeOfChange: Removed,
-					Value:        firstFieldValue,
-				})
-				fields = append(fields, formatters.Field{
-					Name:         k,
-					Deep:         deep,
-					TypeOfChange: Added,
-					Children:     getNestedFields(secondMap, deep+1),
+				fields = append(fields, diff.Field{
+					Name:     k,
+					Depth:    deep,
+					Status:   formatters.Updated,
+					OldValue: firstFieldValue,
+					NewValue: getNestedFields(secondMap, deep+1),
+					Children: getNestedFields(secondMap, deep+1),
 				})
 			} else if firstFieldValue != secondFieldValue {
-				fields = append(fields, formatters.Field{
-					Name:         k,
-					TypeOfChange: Removed,
-					Value:        firstFieldValue,
-					Deep:         deep,
-				})
-				fields = append(fields, formatters.Field{
-					Name:         k,
-					TypeOfChange: Added,
-					Value:        secondFieldValue,
-					Deep:         deep,
+				fields = append(fields, diff.Field{
+					Name:     k,
+					Depth:    deep,
+					Status:   formatters.Updated,
+					OldValue: firstFieldValue,
+					NewValue: secondFieldValue,
 				})
 			} else {
-				fields = append(fields, formatters.Field{
-					Name:  k,
-					Value: firstFieldValue,
-					Deep:  deep,
+				fields = append(fields, diff.Field{
+					Name:     k,
+					OldValue: firstFieldValue,
+					NewValue: firstFieldValue,
+					Depth:    deep,
 				})
 			}
 		} else if isKeyExistsInFirst {
 			// ключ есть только в первом, значит был удалён
-			fields = append(fields, getRemovedOrAddedField(k, firstFieldValue, Removed, deep))
+			fields = append(fields, getRemovedOrAddedField(k, firstFieldValue, formatters.Removed, deep))
 		} else if isKeyExistsInSecond {
 			// ключ есть только во втором, значит был добавлен
-			fields = append(fields, getRemovedOrAddedField(k, secondFieldValue, Added, deep))
+			fields = append(fields, getRemovedOrAddedField(k, secondFieldValue, formatters.Added, deep))
 		}
 	}
 
@@ -139,25 +89,28 @@ func getRemovedOrAddedField(
 	value any,
 	typeOfChange string,
 	deep int,
-) formatters.Field {
+) diff.Field {
+	result := diff.Field{
+		Name:   fieldName,
+		Status: typeOfChange,
+		Depth:  deep,
+	}
 	if mapValue, isMap := value.(map[string]any); isMap {
-		return formatters.Field{
-			Name:         fieldName,
-			TypeOfChange: typeOfChange,
-			Deep:         deep,
-			Children:     getNestedFields(mapValue, deep+1),
+		result.Children = getNestedFields(mapValue, deep+1)
+		if typeOfChange == formatters.Added {
+			result.NewValue = getNestedFields(mapValue, deep+1)
+		} else if typeOfChange == formatters.Removed {
+			result.OldValue = getNestedFields(mapValue, deep+1)
 		}
 	} else {
-		return formatters.Field{
-			Name:         fieldName,
-			TypeOfChange: typeOfChange,
-			Value:        value,
-			Deep:         deep,
-		}
+		result.OldValue = value
+		result.NewValue = value
 	}
+
+	return result
 }
-func getNestedFields(m map[string]any, deep int) []formatters.Field {
-	var fields []formatters.Field
+func getNestedFields(m map[string]any, deep int) []diff.Field {
+	var fields []diff.Field
 
 	var keys []string
 	for k := range m {
@@ -168,16 +121,17 @@ func getNestedFields(m map[string]any, deep int) []formatters.Field {
 	for _, key := range keys {
 		mapValue, ok := m[key].(map[string]any)
 		if ok {
-			fields = append(fields, formatters.Field{
+			fields = append(fields, diff.Field{
 				Name:     key,
 				Children: getNestedFields(mapValue, deep+1),
-				Deep:     deep,
+				Depth:    deep,
 			})
 		} else {
-			fields = append(fields, formatters.Field{
-				Name:  key,
-				Value: m[key],
-				Deep:  deep,
+			fields = append(fields, diff.Field{
+				Name:     key,
+				OldValue: m[key],
+				NewValue: m[key],
+				Depth:    deep,
 			})
 		}
 	}

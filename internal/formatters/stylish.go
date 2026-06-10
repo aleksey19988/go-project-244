@@ -14,7 +14,7 @@ func (sf *StylishFormatter) Format(fields []diff.Field) (string, error) {
 	bld.WriteString("{\n")
 
 	for _, field := range fields {
-		fieldData, err := sf.GetOutputString(field, strings.Builder{})
+		fieldData, err := sf.GetOutputString(field)
 		if err != nil {
 			return "", err
 		}
@@ -25,10 +25,11 @@ func (sf *StylishFormatter) Format(fields []diff.Field) (string, error) {
 
 	return bld.String(), nil
 }
-func (sf *StylishFormatter) GetOutputString(f diff.Field, builder strings.Builder) (string, error) {
+func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 	if f.Depth <= 0 {
 		return "", errors.New("deep is negative or zero")
 	}
+	bld := new(strings.Builder)
 
 	marginsCount := f.Depth*4 - 2
 	if len(f.Status) == 0 {
@@ -47,44 +48,44 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field, builder strings.Builde
 
 	if f.Children != nil {
 		if f.Status == Updated {
-			builder.WriteString(fmt.Sprintf("%s%s %s: {\n", strings.Repeat(" ", marginsCount), Removed, f.Name))
+			bld.WriteString(fmt.Sprintf("%s%s %s: {\n", strings.Repeat(" ", marginsCount), Removed, f.Name))
 		} else {
-			builder.WriteString(fmt.Sprintf("%s%s %s: {\n", strings.Repeat(" ", marginsCount), f.Status, f.Name))
+			bld.WriteString(fmt.Sprintf("%s%s %s: {\n", strings.Repeat(" ", marginsCount), f.Status, f.Name))
 		}
 
 		for _, child := range f.Children {
-			childData, err := sf.GetOutputString(child, builder)
+			childData, err := sf.GetOutputString(child)
 			if err != nil {
 				return "", err
 			}
-			builder.WriteString(childData)
+			bld.WriteString(childData)
 		}
 
-		builder.WriteString(fmt.Sprintf("%s  }\n", strings.Repeat(" ", marginsCount)))
+		bld.WriteString(fmt.Sprintf("%s  }\n", strings.Repeat(" ", marginsCount)))
 
 		if f.Status == Updated {
 			if fields, isSlice := newValue.([]diff.Field); isSlice {
-				builder.WriteString(fmt.Sprintf("%s%s %s: {\n", strings.Repeat(" ", marginsCount), Added, f.Name))
+				bld.WriteString(fmt.Sprintf("%s%s %s: {\n", strings.Repeat(" ", marginsCount), Added, f.Name))
 				for _, child := range fields {
-					childData, err := sf.GetOutputString(child, builder)
+					childData, err := sf.GetOutputString(child)
 					if err != nil {
 						return "", err
 					}
-					builder.WriteString(childData)
+					bld.WriteString(childData)
 				}
-				builder.WriteString(fmt.Sprintf("%s  }\n", strings.Repeat(" ", marginsCount)))
+				bld.WriteString(fmt.Sprintf("%s  }\n", strings.Repeat(" ", marginsCount)))
 			} else {
-				builder.WriteString(fmt.Sprintf("%s%s %s: %v\n", strings.Repeat(" ", marginsCount), Added, f.Name, newValue))
+				bld.WriteString(fmt.Sprintf("%s%s %s: %v\n", strings.Repeat(" ", marginsCount), Added, f.Name, newValue))
 			}
 		}
 	} else {
 		if f.Status == Updated {
-			builder.WriteString(fmt.Sprintf("%s%s %s: %v\n", strings.Repeat(" ", marginsCount), Removed, f.Name, oldValue))
-			builder.WriteString(fmt.Sprintf("%s%s %s: %v\n", strings.Repeat(" ", marginsCount), Added, f.Name, newValue))
+			bld.WriteString(fmt.Sprintf("%s%s %s: %v\n", strings.Repeat(" ", marginsCount), Removed, f.Name, oldValue))
+			bld.WriteString(fmt.Sprintf("%s%s %s: %v\n", strings.Repeat(" ", marginsCount), Added, f.Name, newValue))
 		} else {
-			builder.WriteString(fmt.Sprintf("%s%s %s: %v\n", strings.Repeat(" ", marginsCount), f.Status, f.Name, oldValue))
+			bld.WriteString(fmt.Sprintf("%s%s %s: %v\n", strings.Repeat(" ", marginsCount), f.Status, f.Name, oldValue))
 		}
 	}
 
-	return builder.String(), nil
+	return bld.String(), nil
 }

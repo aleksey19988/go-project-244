@@ -4,7 +4,6 @@ import (
 	"code/internal/diff"
 	"code/internal/formatters"
 	"code/internal/storage"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -45,7 +44,7 @@ func TestGetOutputString(t *testing.T) {
 	formatter, err := formatters.NewFormatter(formatters.DefaultOutputFormat)
 	require.NoError(t, err)
 
-	res, err := formatter.GetOutputString(f, strings.Builder{})
+	res, err := formatter.GetOutputString(f)
 	require.NoError(t, err)
 	assert.Equal(t, "  + field-name: field-value\n", res)
 }

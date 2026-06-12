@@ -9,7 +9,9 @@ const (
 	Added               = "+"
 	Removed             = "-"
 	Updated             = "~"
-	DefaultOutputFormat = "stylish"
+	DefaultOutputFormat = StylishOutputFormat
+	StylishOutputFormat = "stylish"
+	PlainOutputFormat   = "plain"
 )
 
 type Formatter interface {
@@ -22,9 +24,9 @@ func NewFormatter(format string) (Formatter, error) {
 		format = DefaultOutputFormat
 	}
 	switch format {
-	case "stylish":
+	case StylishOutputFormat:
 		return &StylishFormatter{}, nil
-	case "plain":
+	case PlainOutputFormat:
 		return &PlainFormatter{}, nil
 	}
 	return nil, errors.New("format is not supported")

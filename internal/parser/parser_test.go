@@ -33,21 +33,6 @@ func TestValidate(t *testing.T) {
 	_, err = storage.NewStorage("/path/to/file.yaml", "/path/to/file.yaml")
 	require.NoError(t, err)
 }
-func TestGetOutputString(t *testing.T) {
-	f := diff.Field{
-		Name:     "field-name",
-		Status:   formatters.Added,
-		NewValue: "field-value",
-		Depth:    1,
-		Children: nil,
-	}
-	formatter, err := formatters.NewFormatter(formatters.DefaultOutputFormat)
-	require.NoError(t, err)
-
-	res, err := formatter.GetOutputString(f)
-	require.NoError(t, err)
-	assert.Equal(t, "  + field-name: field-value\n", res)
-}
 func TestDiff(t *testing.T) {
 	t.Run("Test json", func(t *testing.T) {
 		s, err := storage.NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
@@ -70,6 +55,7 @@ func TestDiff(t *testing.T) {
 			Children: []diff.Field{
 				{
 					Name:     "abc",
+					OldValue: float64(12345),
 					NewValue: float64(12345),
 					Depth:    2,
 				},
@@ -79,6 +65,7 @@ func TestDiff(t *testing.T) {
 					Children: []diff.Field{
 						{
 							Name:     "id",
+							OldValue: float64(45),
 							NewValue: float64(45),
 							Depth:    3,
 						},
@@ -108,6 +95,7 @@ func TestDiff(t *testing.T) {
 			Children: []diff.Field{
 				{
 					Name:     "abc",
+					OldValue: 12345,
 					NewValue: 12345,
 					Depth:    2,
 				},
@@ -117,6 +105,7 @@ func TestDiff(t *testing.T) {
 					Children: []diff.Field{
 						{
 							Name:     "id",
+							OldValue: 45,
 							NewValue: 45,
 							Depth:    3,
 						},

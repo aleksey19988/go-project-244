@@ -40,16 +40,28 @@ func (pf *PlainFormatter) GetOutputString(f diff.Field) (string, error) {
 			bld.WriteString(childData)
 		}
 	} else {
-		f.OldValue = FormatValue(f.OldValue)
-		f.NewValue = FormatValue(f.NewValue)
+		from := FormatValue(f.OldValue)
+		to := FormatValue(f.NewValue)
 
 		switch f.Status {
 		case Added:
-			bld.WriteString(fmt.Sprintf("Property '%s' was added with value: %v\n", f.Name, f.NewValue))
+			if f.NewValue == nil && f.Children != nil {
+				bld.WriteString(fmt.Sprintf("Property '%s' was added with value: %v\n", f.Name, FormatValue(f.Children)))
+			} else {
+				bld.WriteString(fmt.Sprintf("Property '%s' was added with value: %v\n", f.Name, to))
+			}
 		case Removed:
 			bld.WriteString(fmt.Sprintf("Property '%s' was removed\n", f.Name))
 		case Updated:
-			bld.WriteString(fmt.Sprintf("Property '%s' was updated. From %v to %v\n", f.Name, f.OldValue, f.NewValue))
+			if f.OldValue == nil && f.Children != nil {
+				from = FormatValue(f.Children)
+			}
+
+			if f.NewValue == nil && f.Children != nil {
+				to = FormatValue(f.Children)
+			}
+
+			bld.WriteString(fmt.Sprintf("Property '%s' was updated. From %v to %v\n", f.Name, from, to))
 		}
 	}
 

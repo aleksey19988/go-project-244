@@ -97,11 +97,6 @@ func getRemovedOrAddedField(
 	}
 	if mapValue, isMap := value.(map[string]any); isMap {
 		result.Children = getNestedFields(mapValue, deep+1)
-		if typeOfChange == formatters.Added {
-			result.NewValue = getNestedFields(mapValue, deep+1)
-		} else if typeOfChange == formatters.Removed {
-			result.OldValue = getNestedFields(mapValue, deep+1)
-		}
 	} else {
 		result.OldValue = value
 		result.NewValue = value

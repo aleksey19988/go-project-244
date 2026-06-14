@@ -48,9 +48,15 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 
 	if f.Children != nil {
 		if f.Status == Updated {
-			bld.WriteString(fmt.Sprintf("%s%s %s: {\n", strings.Repeat(" ", marginsCount), Removed, f.Name))
+			_, err := fmt.Fprintf(bld, "%s%s %s: {\n", strings.Repeat(" ", marginsCount), Removed, f.Name)
+			if err != nil {
+				return "", err
+			}
 		} else {
-			bld.WriteString(fmt.Sprintf("%s%s %s: {\n", strings.Repeat(" ", marginsCount), f.Status, f.Name))
+			_, err := fmt.Fprintf(bld, "%s%s %s: {\n", strings.Repeat(" ", marginsCount), f.Status, f.Name)
+			if err != nil {
+				return "", err
+			}
 		}
 
 		for _, child := range f.Children {
@@ -61,11 +67,17 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 			bld.WriteString(childData)
 		}
 
-		bld.WriteString(fmt.Sprintf("%s  }\n", strings.Repeat(" ", marginsCount)))
+		_, err := fmt.Fprintf(bld, "%s  }\n", strings.Repeat(" ", marginsCount))
+		if err != nil {
+			return "", err
+		}
 
 		if f.Status == Updated {
 			if fields, isSlice := newValue.([]diff.Field); isSlice {
-				bld.WriteString(fmt.Sprintf("%s%s %s: {\n", strings.Repeat(" ", marginsCount), Added, f.Name))
+				_, err = fmt.Fprintf(bld, "%s%s %s: {\n", strings.Repeat(" ", marginsCount), Added, f.Name)
+				if err != nil {
+					return "", err
+				}
 				for _, child := range fields {
 					childData, err := sf.GetOutputString(child)
 					if err != nil {
@@ -73,17 +85,38 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 					}
 					bld.WriteString(childData)
 				}
-				bld.WriteString(fmt.Sprintf("%s  }\n", strings.Repeat(" ", marginsCount)))
+				_, err = fmt.Fprintf(bld, "%s  }\n", strings.Repeat(" ", marginsCount))
+				if err != nil {
+					return "", err
+				}
 			} else {
-				bld.WriteString(fmt.Sprintf("%s%s %s: %v\n", strings.Repeat(" ", marginsCount), Added, f.Name, newValue))
+				_, err = fmt.Fprintf(bld, "%s%s %s: %v\n", strings.Repeat(" ", marginsCount), Added, f.Name, newValue)
+				if err != nil {
+					return "", err
+				}
 			}
 		}
 	} else {
-		if f.Status == Updated {
-			bld.WriteString(fmt.Sprintf("%s%s %s: %v\n", strings.Repeat(" ", marginsCount), Removed, f.Name, oldValue))
-			bld.WriteString(fmt.Sprintf("%s%s %s: %v\n", strings.Repeat(" ", marginsCount), Added, f.Name, newValue))
-		} else {
-			bld.WriteString(fmt.Sprintf("%s%s %s: %v\n", strings.Repeat(" ", marginsCount), f.Status, f.Name, oldValue))
+		switch f.Status {
+		case Updated:
+			_, err := fmt.Fprintf(bld, "%s%s %s: %v\n", strings.Repeat(" ", marginsCount), Removed, f.Name, oldValue)
+			if err != nil {
+				return "", err
+			}
+			_, err = fmt.Fprintf(bld, "%s%s %s: %v\n", strings.Repeat(" ", marginsCount), Added, f.Name, newValue)
+			if err != nil {
+				return "", err
+			}
+		case Added:
+			_, err := fmt.Fprintf(bld, "%s%s %s: %v\n", strings.Repeat(" ", marginsCount), f.Status, f.Name, newValue)
+			if err != nil {
+				return "", err
+			}
+		default:
+			_, err := fmt.Fprintf(bld, "%s%s %s: %v\n", strings.Repeat(" ", marginsCount), f.Status, f.Name, oldValue)
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 

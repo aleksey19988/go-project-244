@@ -67,7 +67,6 @@ func (pf *PlainFormatter) GetOutputString(f diff.Field) (string, error) {
 
 	return bld.String(), nil
 }
-
 func FormatValue(v any) string {
 	switch v.(type) {
 	case nil:

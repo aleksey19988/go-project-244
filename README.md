@@ -25,3 +25,7 @@
 #### Recursive comparison .yaml files
 
 [![asciicast](https://asciinema.org/a/DH6PPx4n1PnYZaWr.svg)](https://asciinema.org/a/DH6PPx4n1PnYZaWr)
+
+#### Plain format
+
+[![asciicast](https://asciinema.org/a/NhbXxKmQtxxl8NkP.svg)](https://asciinema.org/a/NhbXxKmQtxxl8NkP)

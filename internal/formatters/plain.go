@@ -27,7 +27,7 @@ func (pf *PlainFormatter) GetOutputString(f diff.Field) (string, error) {
 		return "", errors.New("deep is negative or zero")
 	}
 
-	bld := strings.Builder{}
+	bld := new(strings.Builder)
 
 	if f.Children != nil && f.Status == "" {
 		for _, child := range f.Children {
@@ -46,12 +46,21 @@ func (pf *PlainFormatter) GetOutputString(f diff.Field) (string, error) {
 		switch f.Status {
 		case Added:
 			if f.NewValue == nil && f.Children != nil {
-				bld.WriteString(fmt.Sprintf("Property '%s' was added with value: %v\n", f.Name, FormatValue(f.Children)))
+				_, err := fmt.Fprintf(bld, "Property '%s' was added with value: %v\n", f.Name, FormatValue(f.Children))
+				if err != nil {
+					return "", err
+				}
 			} else {
-				bld.WriteString(fmt.Sprintf("Property '%s' was added with value: %v\n", f.Name, to))
+				_, err := fmt.Fprintf(bld, "Property '%s' was added with value: %v\n", f.Name, to)
+				if err != nil {
+					return "", err
+				}
 			}
 		case Removed:
-			bld.WriteString(fmt.Sprintf("Property '%s' was removed\n", f.Name))
+			_, err := fmt.Fprintf(bld, "Property '%s' was removed\n", f.Name)
+			if err != nil {
+				return "", err
+			}
 		case Updated:
 			if f.OldValue == nil && f.Children != nil {
 				from = FormatValue(f.Children)
@@ -61,7 +70,10 @@ func (pf *PlainFormatter) GetOutputString(f diff.Field) (string, error) {
 				to = FormatValue(f.Children)
 			}
 
-			bld.WriteString(fmt.Sprintf("Property '%s' was updated. From %v to %v\n", f.Name, from, to))
+			_, err := fmt.Fprintf(bld, "Property '%s' was updated. From %v to %v\n", f.Name, from, to)
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 

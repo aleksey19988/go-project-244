@@ -10,14 +10,18 @@
 
 ### Ascinema
 
-#### Work with json files
+#### Work with flat .json files
 
-[![json](https://asciinema.org/a/6JpClq1pBcALxu6G.svg)](https://asciinema.org/a/6JpClq1pBcALxu6G)
+[![asciicast](https://asciinema.org/a/QBcCgSJ3nnZ1XmqB.svg)](https://asciinema.org/a/QBcCgSJ3nnZ1XmqB)
 
-#### Work with yaml files
+#### Work with .yaml files
 
-[![yaml](https://asciinema.org/a/gxS9m3UIdMJMXAkv.svg)](https://asciinema.org/a/gxS9m3UIdMJMXAkv)
+[![asciicast](https://asciinema.org/a/S3fU1qgXYARMao2S.svg)](https://asciinema.org/a/S3fU1qgXYARMao2S)
 
-#### Recursive comparison
+#### Recursive comparison .json files
 
-[![recursive](https://asciinema.org/a/t5j4a8szJnYfdXPb.svg)](https://asciinema.org/a/t5j4a8szJnYfdXPb)
+[![asciicast](https://asciinema.org/a/9c2zICtDtDOFg3AR.svg)](https://asciinema.org/a/9c2zICtDtDOFg3AR)
+
+#### Recursive comparison .yaml files
+
+[![asciicast](https://asciinema.org/a/DH6PPx4n1PnYZaWr.svg)](https://asciinema.org/a/DH6PPx4n1PnYZaWr)

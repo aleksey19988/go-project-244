@@ -12,6 +12,7 @@ const (
 	DefaultOutputFormat = StylishOutputFormat
 	StylishOutputFormat = "stylish"
 	PlainOutputFormat   = "plain"
+	JsonOutputFormat    = "json"
 )
 
 type Formatter interface {
@@ -25,9 +26,11 @@ func NewFormatter(format string) (Formatter, error) {
 	}
 	switch format {
 	case StylishOutputFormat:
-		return &StylishFormatter{}, nil
+		return new(StylishFormatter), nil
 	case PlainOutputFormat:
-		return &PlainFormatter{}, nil
+		return new(PlainFormatter), nil
+	case JsonOutputFormat:
+		return new(JsonFormatter), nil
 	}
 	return nil, errors.New("format is not supported")
 }

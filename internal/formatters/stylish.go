@@ -49,7 +49,7 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 	if f.Children != nil {
 		switch f.Status {
 		case Updated:
-			_, err := fmt.Fprintf(bld, "%s%s %s: {\n", strings.Repeat(" ", marginsCount), Removed, f.Name)
+			_, err := fmt.Fprintf(bld, "%s- %s: {\n", strings.Repeat(" ", marginsCount), f.Name)
 			if err != nil {
 				return "", err
 			}
@@ -85,7 +85,7 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 
 		if f.Status == Updated {
 			if fields, isSlice := newValue.([]diff.Field); isSlice {
-				_, err = fmt.Fprintf(bld, "%s%s %s: {\n", strings.Repeat(" ", marginsCount), Added, f.Name)
+				_, err = fmt.Fprintf(bld, "%s+ %s: {\n", strings.Repeat(" ", marginsCount), f.Name)
 				if err != nil {
 					return "", err
 				}
@@ -101,7 +101,7 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 					return "", err
 				}
 			} else {
-				_, err = fmt.Fprintf(bld, "%s%s %s: %v\n", strings.Repeat(" ", marginsCount), Added, f.Name, newValue)
+				_, err = fmt.Fprintf(bld, "%s+ %s: %v\n", strings.Repeat(" ", marginsCount), f.Name, newValue)
 				if err != nil {
 					return "", err
 				}
@@ -110,11 +110,11 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 	} else {
 		switch f.Status {
 		case Updated:
-			_, err := fmt.Fprintf(bld, "%s%s %s: %v\n", strings.Repeat(" ", marginsCount), Removed, f.Name, oldValue)
+			_, err := fmt.Fprintf(bld, "%s- %s: %v\n", strings.Repeat(" ", marginsCount), f.Name, oldValue)
 			if err != nil {
 				return "", err
 			}
-			_, err = fmt.Fprintf(bld, "%s%s %s: %v\n", strings.Repeat(" ", marginsCount), Added, f.Name, newValue)
+			_, err = fmt.Fprintf(bld, "%s+ %s: %v\n", strings.Repeat(" ", marginsCount), f.Name, newValue)
 			if err != nil {
 				return "", err
 			}

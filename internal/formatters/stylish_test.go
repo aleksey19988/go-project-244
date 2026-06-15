@@ -123,7 +123,7 @@ func TestStylishFormatter_GetOutputString(t *testing.T) {
 
 		res, err := f.GetOutputString(fld)
 		assert.NoError(t, err)
-		expected := fmt.Sprintf("  %s %s: %v\n  %s %s: %v\n", Removed, fld.Name, fld.OldValue, Added, fld.Name, fld.NewValue)
+		expected := fmt.Sprintf("  - %s: %v\n  + %s: %v\n", fld.Name, fld.OldValue, fld.Name, fld.NewValue)
 		assert.Equal(t, expected, res)
 	})
 	t.Run("Update field with children", func(t *testing.T) {
@@ -160,7 +160,7 @@ func TestStylishFormatter_GetOutputString(t *testing.T) {
 
 		res, err := f.GetOutputString(fld)
 		assert.NoError(t, err)
-		expected := fmt.Sprintf("  %s %s: {\n        %s: %v\n    }\n  %s %s: {\n        %s: %v\n    }\n", Removed, fld.Name, fld.Children[0].Name, fld.Children[0].OldValue, Added, fld.Name, fld.NewValue.([]diff.Field)[0].Name, fld.NewValue.([]diff.Field)[0].OldValue)
+		expected := fmt.Sprintf("  - %s: {\n        %s: %v\n    }\n  + %s: {\n        %s: %v\n    }\n", fld.Name, fld.Children[0].Name, fld.Children[0].OldValue, fld.Name, fld.NewValue.([]diff.Field)[0].Name, fld.NewValue.([]diff.Field)[0].OldValue)
 		assert.Equal(t, expected, res)
 
 		fld = diff.Field{
@@ -182,7 +182,7 @@ func TestStylishFormatter_GetOutputString(t *testing.T) {
 		}
 		res, err = f.GetOutputString(fld)
 		assert.NoError(t, err)
-		expected = fmt.Sprintf("  %s %s: {\n        %s: %v\n    }\n  %s %s: %v\n", Removed, fld.Name, fld.Children[0].Name, fld.Children[0].OldValue, Added, fld.Name, fld.NewValue)
+		expected = fmt.Sprintf("  - %s: {\n        %s: %v\n    }\n  + %s: %v\n", fld.Name, fld.Children[0].Name, fld.Children[0].OldValue, fld.Name, fld.NewValue)
 		assert.Equal(t, expected, res)
 	})
 }

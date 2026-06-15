@@ -70,6 +70,7 @@ func Diff(pair []map[string]any, deep int) ([]diff.Field, error) {
 					Name:     k,
 					OldValue: firstFieldValue,
 					NewValue: firstFieldValue,
+					Status:   formatters.Unchanged,
 					Depth:    deep,
 				})
 			}

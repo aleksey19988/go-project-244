@@ -50,7 +50,7 @@ func TestDiff(t *testing.T) {
 
 		expectedField := diff.Field{
 			Name:   "group2",
-			Status: "-",
+			Status: formatters.Removed,
 			Depth:  1,
 			Children: []diff.Field{
 				{

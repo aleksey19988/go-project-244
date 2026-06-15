@@ -33,7 +33,7 @@ func TestStylishFormatter_Format(t *testing.T) {
 
 	res, err := formatter.Format(fields)
 	assert.NoError(t, err)
-	expected := fmt.Sprintf("{\n  %s %s: %v\n  %s %s: %v\n}", Added, fields[0].Name, fields[0].NewValue, Removed, fields[1].Name, fields[1].OldValue)
+	expected := fmt.Sprintf("{\n  + %s: %v\n  - %s: %v\n}", fields[0].Name, fields[0].NewValue, fields[1].Name, fields[1].OldValue)
 	assert.Equal(t, expected, res)
 }
 
@@ -63,7 +63,7 @@ func TestStylishFormatter_GetOutputString(t *testing.T) {
 
 		res, err := f.GetOutputString(fld)
 		assert.NoError(t, err)
-		expected := fmt.Sprintf("  %s %s: %v\n", Added, fld.Name, fld.NewValue)
+		expected := fmt.Sprintf("  + %s: %v\n", fld.Name, fld.NewValue)
 		assert.Equal(t, expected, res)
 
 		fld = diff.Field{
@@ -77,7 +77,7 @@ func TestStylishFormatter_GetOutputString(t *testing.T) {
 
 		res, err = f.GetOutputString(fld)
 		assert.NoError(t, err)
-		expected = fmt.Sprintf("  %s %s: %v\n", Added, fld.Name, "null")
+		expected = fmt.Sprintf("  + %s: %v\n", fld.Name, "null")
 		assert.Equal(t, expected, res)
 	})
 	t.Run("Add field with children", func(t *testing.T) {
@@ -105,7 +105,7 @@ func TestStylishFormatter_GetOutputString(t *testing.T) {
 
 		res, err := f.GetOutputString(fld)
 		assert.NoError(t, err)
-		expected := fmt.Sprintf("    %s: {\n      %s %s: %v\n    }\n", fld.Name, Added, fld.Children[0].Name, fld.Children[0].NewValue)
+		expected := fmt.Sprintf("    %s: {\n      + %s: %v\n    }\n", fld.Name, fld.Children[0].Name, fld.Children[0].NewValue)
 		assert.Equal(t, expected, res)
 	})
 	t.Run("Update field", func(t *testing.T) {

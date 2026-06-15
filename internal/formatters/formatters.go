@@ -6,9 +6,11 @@ import (
 )
 
 const (
-	Added               = "+"
-	Removed             = "-"
-	Updated             = "~"
+	Added     = "added"
+	Removed   = "removed"
+	Updated   = "updated"
+	Unchanged = "unchanged"
+
 	DefaultOutputFormat = StylishOutputFormat
 	StylishOutputFormat = "stylish"
 	PlainOutputFormat   = "plain"

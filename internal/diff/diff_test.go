@@ -1,8 +1,6 @@
-package parser
+package diff
 
 import (
-	"code/internal/diff"
-	"code/internal/formatters"
 	"code/internal/storage"
 	"testing"
 
@@ -48,11 +46,11 @@ func TestDiff(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 4, len(fields))
 
-		expectedField := diff.Field{
+		expectedField := Field{
 			Name:   "group2",
-			Status: formatters.Removed,
+			Status: Removed,
 			Depth:  1,
-			Children: []diff.Field{
+			Children: []Field{
 				{
 					Name:     "abc",
 					OldValue: float64(12345),
@@ -62,7 +60,7 @@ func TestDiff(t *testing.T) {
 				{
 					Name:  "deep",
 					Depth: 2,
-					Children: []diff.Field{
+					Children: []Field{
 						{
 							Name:     "id",
 							OldValue: float64(45),
@@ -88,11 +86,11 @@ func TestDiff(t *testing.T) {
 		fields, err := Diff(maps, 1)
 		require.NoError(t, err)
 		assert.Equal(t, 4, len(fields))
-		expectedField := diff.Field{
+		expectedField := Field{
 			Name:   "group2",
-			Status: formatters.Removed,
+			Status: Removed,
 			Depth:  1,
-			Children: []diff.Field{
+			Children: []Field{
 				{
 					Name:     "abc",
 					OldValue: 12345,
@@ -102,7 +100,7 @@ func TestDiff(t *testing.T) {
 				{
 					Name:  "deep",
 					Depth: 2,
-					Children: []diff.Field{
+					Children: []Field{
 						{
 							Name:     "id",
 							OldValue: 45,

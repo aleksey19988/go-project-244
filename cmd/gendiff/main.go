@@ -1,8 +1,8 @@
 package main
 
 import (
+	"code/internal/diff"
 	"code/internal/formatters"
-	"code/internal/parser"
 	"code/internal/storage"
 	"context"
 	"fmt"
@@ -47,7 +47,7 @@ func main() {
 				return err
 			}
 
-			fields, err := parser.Diff(maps, 1)
+			fields, err := diff.Diff(maps, 1)
 			if err != nil {
 				return err
 			}

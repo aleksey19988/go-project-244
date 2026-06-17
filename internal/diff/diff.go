@@ -1,14 +1,19 @@
-package parser
+package diff
 
 import (
-	"code/internal/diff"
-	"code/internal/formatters"
 	"slices"
 	"sort"
 )
 
-func Diff(pair []map[string]any, deep int) ([]diff.Field, error) {
-	var fields []diff.Field
+const (
+	Added     = "added"
+	Removed   = "removed"
+	Updated   = "updated"
+	Unchanged = "unchanged"
+)
+
+func Diff(pair []map[string]any, deep int) ([]Field, error) {
+	var fields []Field
 
 	keys := getAllKeys(pair)
 	slices.Sort(keys)
@@ -22,7 +27,7 @@ func Diff(pair []map[string]any, deep int) ([]diff.Field, error) {
 
 		if isKeyExistsInFirst && isKeyExistsInSecond {
 			// ключ есть в обоих файлах
-			var children []diff.Field
+			var children []Field
 			var err error
 
 			if firstIsMap && secondIsMap {
@@ -33,53 +38,53 @@ func Diff(pair []map[string]any, deep int) ([]diff.Field, error) {
 				if err != nil {
 					return nil, err
 				}
-				fields = append(fields, diff.Field{
+				fields = append(fields, Field{
 					Name:     k,
 					Depth:    deep,
 					Children: children,
 				})
 				continue
 			} else if firstIsMap {
-				fields = append(fields, diff.Field{
+				fields = append(fields, Field{
 					Name:     k,
 					Depth:    deep,
-					Status:   formatters.Updated,
+					Status:   Updated,
 					OldValue: getNestedFields(firstMap, deep+1),
 					NewValue: secondFieldValue,
 					Children: getNestedFields(firstMap, deep+1),
 				})
 			} else if secondIsMap {
-				fields = append(fields, diff.Field{
+				fields = append(fields, Field{
 					Name:     k,
 					Depth:    deep,
-					Status:   formatters.Updated,
+					Status:   Updated,
 					OldValue: firstFieldValue,
 					NewValue: getNestedFields(secondMap, deep+1),
 					Children: getNestedFields(secondMap, deep+1),
 				})
 			} else if firstFieldValue != secondFieldValue {
-				fields = append(fields, diff.Field{
+				fields = append(fields, Field{
 					Name:     k,
 					Depth:    deep,
-					Status:   formatters.Updated,
+					Status:   Updated,
 					OldValue: firstFieldValue,
 					NewValue: secondFieldValue,
 				})
 			} else {
-				fields = append(fields, diff.Field{
+				fields = append(fields, Field{
 					Name:     k,
 					OldValue: firstFieldValue,
 					NewValue: firstFieldValue,
-					Status:   formatters.Unchanged,
+					Status:   Unchanged,
 					Depth:    deep,
 				})
 			}
 		} else if isKeyExistsInFirst {
 			// ключ есть только в первом, значит был удалён
-			fields = append(fields, getRemovedOrAddedField(k, firstFieldValue, formatters.Removed, deep))
+			fields = append(fields, getRemovedOrAddedField(k, firstFieldValue, Removed, deep))
 		} else if isKeyExistsInSecond {
 			// ключ есть только во втором, значит был добавлен
-			fields = append(fields, getRemovedOrAddedField(k, secondFieldValue, formatters.Added, deep))
+			fields = append(fields, getRemovedOrAddedField(k, secondFieldValue, Added, deep))
 		}
 	}
 
@@ -90,8 +95,8 @@ func getRemovedOrAddedField(
 	value any,
 	typeOfChange string,
 	deep int,
-) diff.Field {
-	result := diff.Field{
+) Field {
+	result := Field{
 		Name:   fieldName,
 		Status: typeOfChange,
 		Depth:  deep,
@@ -105,8 +110,8 @@ func getRemovedOrAddedField(
 
 	return result
 }
-func getNestedFields(m map[string]any, deep int) []diff.Field {
-	var fields []diff.Field
+func getNestedFields(m map[string]any, deep int) []Field {
+	var fields []Field
 
 	var keys []string
 	for k := range m {
@@ -117,13 +122,13 @@ func getNestedFields(m map[string]any, deep int) []diff.Field {
 	for _, key := range keys {
 		mapValue, ok := m[key].(map[string]any)
 		if ok {
-			fields = append(fields, diff.Field{
+			fields = append(fields, Field{
 				Name:     key,
 				Children: getNestedFields(mapValue, deep+1),
 				Depth:    deep,
 			})
 		} else {
-			fields = append(fields, diff.Field{
+			fields = append(fields, Field{
 				Name:     key,
 				OldValue: m[key],
 				NewValue: m[key],

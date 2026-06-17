@@ -3,7 +3,6 @@ package formatters
 import (
 	"code/internal/diff"
 	"encoding/json"
-	"fmt"
 )
 
 type JsonFormatter struct{}
@@ -26,11 +25,10 @@ func (jf JsonFormatter) GetOutputString(f diff.Field) (string, error) {
 	return "", nil
 }
 
-func (jf JsonFormatter) getFieldDataForOutput(fields []diff.Field) (map[string]map[string]any, error) {
-	res := make(map[string]map[string]any)
+func (jf JsonFormatter) getFieldDataForOutput(fields []diff.Field) (map[string]any, error) {
+	res := make(map[string]any)
 
 	for _, field := range fields {
-		fmt.Println(field)
 		fieldData := map[string]any{}
 
 		if field.Status != "" {
@@ -38,51 +36,77 @@ func (jf JsonFormatter) getFieldDataForOutput(fields []diff.Field) (map[string]m
 		}
 
 		switch field.Status {
-		case Updated:
-			if _, ok := field.OldValue.([]diff.Field); ok {
-				children, err := jf.getFieldDataForOutput(field.OldValue.([]diff.Field))
-				if err != nil {
-					return nil, err
-				}
-				fieldData["old_value"] = children
-			} else {
-				fieldData["old_value"] = field.OldValue
+		case diff.Added:
+			value, err := jf.getParsedData(field, diff.Added)
+			if err != nil {
+				return nil, err
 			}
+			fieldData["value"] = value
+			res[field.Name] = fieldData
+		case diff.Removed, diff.Unchanged:
+			value, err := jf.getParsedData(field, diff.Removed)
+			if err != nil {
+				return nil, err
+			}
+			fieldData["value"] = value
+			res[field.Name] = fieldData
+		case diff.Updated:
+			oldValue, err := jf.getParsedData(field, diff.Removed)
+			if err != nil {
+				return nil, err
+			}
+			fieldData["old_value"] = oldValue
 
-			if _, ok := field.NewValue.([]diff.Field); ok {
-				children, err := jf.getFieldDataForOutput(field.NewValue.([]diff.Field))
-				if err != nil {
-					return nil, err
-				}
-				fieldData["new_value"] = children
-			} else {
-				fieldData["new_value"] = field.NewValue
+			newValue, err := jf.getParsedData(field, diff.Added)
+			if err != nil {
+				return nil, err
 			}
-		case Added:
-			if field.NewValue != nil {
-				fieldData["value"] = field.NewValue
-			} else if _, ok := field.NewValue.([]diff.Field); ok {
-				childrenData, err := jf.getFieldDataForOutput(field.Children)
-				if err != nil {
-					fmt.Println(err.Error())
-					return map[string]map[string]any{}, err
-				}
-				for fieldName, v := range childrenData {
-					fieldData[fieldName] = v
-				}
-			}
-		case Removed:
-			fieldData["value"] = field.OldValue
-		case Unchanged:
-			fieldData["value"] = field.OldValue
-
+			fieldData["new_value"] = newValue
 			res[field.Name] = fieldData
 		default:
-			if field.Children != nil {
-
+			if len(field.Children) > 0 {
+				childrenData, err := jf.getFieldDataForOutput(field.Children)
+				if err != nil {
+					return nil, err
+				}
+				for k, v := range childrenData {
+					fieldData[k] = v
+				}
+				res[field.Name] = fieldData
+			} else {
+				res[field.Name] = field.OldValue
 			}
 		}
 	}
 
 	return res, nil
+}
+
+func (jf JsonFormatter) getParsedData(field diff.Field, status string) (any, error) {
+	var value any
+
+	if status == diff.Added {
+		value = field.NewValue
+	} else if status == diff.Removed {
+		value = field.OldValue
+	}
+
+	if value == nil && field.Children != nil {
+		value = field.Children
+	}
+
+	if _, ok := value.([]diff.Field); ok {
+		childrenData, err := jf.getFieldDataForOutput(value.([]diff.Field))
+		if err != nil {
+			return nil, err
+		}
+		children := map[string]any{}
+		for k, v := range childrenData {
+			children[k] = v
+		}
+
+		return children, nil
+	} else {
+		return value, nil
+	}
 }

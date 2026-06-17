@@ -12,7 +12,7 @@ func TestPlainFormatter_Format(t *testing.T) {
 	fields := []diff.Field{
 		{
 			Name:     "Name 1",
-			Status:   Removed,
+			Status:   diff.Removed,
 			OldValue: 123,
 			NewValue: "new value",
 			Depth:    1,
@@ -31,7 +31,7 @@ func TestPlainFormatter_Format(t *testing.T) {
 	fields = []diff.Field{
 		{
 			Name:     "Name 1",
-			Status:   Removed,
+			Status:   diff.Removed,
 			OldValue: 123,
 			NewValue: "new value",
 			Depth:    0,
@@ -63,7 +63,7 @@ func TestPlainFormatter_GetOutputString(t *testing.T) {
 
 		fld = diff.Field{
 			Name:     "Name 2",
-			Status:   Added,
+			Status:   diff.Added,
 			OldValue: nil,
 			NewValue: "456",
 			Depth:    0,
@@ -82,7 +82,7 @@ func TestPlainFormatter_GetOutputString(t *testing.T) {
 	t.Run("Add field", func(t *testing.T) {
 		fld := diff.Field{
 			Name:     "Name 3",
-			Status:   Added,
+			Status:   diff.Added,
 			OldValue: nil,
 			NewValue: "456",
 			Depth:    1,
@@ -100,7 +100,7 @@ func TestPlainFormatter_GetOutputString(t *testing.T) {
 
 		fld = diff.Field{
 			Name:     "Name 3",
-			Status:   Added,
+			Status:   diff.Added,
 			OldValue: nil,
 			NewValue: nil,
 			Depth:    1,
@@ -114,7 +114,7 @@ func TestPlainFormatter_GetOutputString(t *testing.T) {
 	t.Run("Remove field", func(t *testing.T) {
 		fld := diff.Field{
 			Name:     "Name 2",
-			Status:   Removed,
+			Status:   diff.Removed,
 			OldValue: nil,
 			NewValue: "456",
 			Depth:    1,
@@ -133,7 +133,7 @@ func TestPlainFormatter_GetOutputString(t *testing.T) {
 	t.Run("Update field", func(t *testing.T) {
 		fld := diff.Field{
 			Name:     "Name 3",
-			Status:   Updated,
+			Status:   diff.Updated,
 			OldValue: "123",
 			NewValue: "456",
 			Depth:    1,
@@ -151,7 +151,7 @@ func TestPlainFormatter_GetOutputString(t *testing.T) {
 
 		fld = diff.Field{
 			Name:     "Name 3",
-			Status:   Updated,
+			Status:   diff.Updated,
 			OldValue: "123",
 			NewValue: []diff.Field{},
 			Depth:    1,
@@ -165,7 +165,7 @@ func TestPlainFormatter_GetOutputString(t *testing.T) {
 
 		fld = diff.Field{
 			Name:     "Name 3",
-			Status:   Updated,
+			Status:   diff.Updated,
 			OldValue: []diff.Field{},
 			NewValue: "123",
 			Depth:    1,
@@ -179,7 +179,7 @@ func TestPlainFormatter_GetOutputString(t *testing.T) {
 
 		fld = diff.Field{
 			Name:     "Name 3",
-			Status:   Updated,
+			Status:   diff.Updated,
 			OldValue: nil,
 			NewValue: "123",
 			Depth:    1,
@@ -193,7 +193,7 @@ func TestPlainFormatter_GetOutputString(t *testing.T) {
 
 		fld = diff.Field{
 			Name:     "Name 3",
-			Status:   Updated,
+			Status:   diff.Updated,
 			OldValue: "456",
 			NewValue: nil,
 			Depth:    1,
@@ -215,7 +215,7 @@ func TestPlainFormatter_GetOutputString(t *testing.T) {
 			Children: []diff.Field{
 				{
 					Name:     "child_name",
-					Status:   Added,
+					Status:   diff.Added,
 					OldValue: nil,
 					NewValue: "new value",
 					Depth:    2,

@@ -48,18 +48,23 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 
 	if f.Children != nil {
 		switch f.Status {
-		case Updated:
+		case diff.Updated:
 			_, err := fmt.Fprintf(bld, "%s- %s: {\n", strings.Repeat(" ", marginsCount), f.Name)
 			if err != nil {
 				return "", err
 			}
-		case Added:
+		case diff.Added:
 			_, err := fmt.Fprintf(bld, "%s+ %s: {\n", strings.Repeat(" ", marginsCount), f.Name)
 			if err != nil {
 				return "", err
 			}
-		case Removed:
+		case diff.Removed:
 			_, err := fmt.Fprintf(bld, "%s- %s: {\n", strings.Repeat(" ", marginsCount), f.Name)
+			if err != nil {
+				return "", err
+			}
+		case diff.Unchanged:
+			_, err := fmt.Fprintf(bld, "%s  %s: {\n", strings.Repeat(" ", marginsCount), f.Name)
 			if err != nil {
 				return "", err
 			}
@@ -83,7 +88,7 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 			return "", err
 		}
 
-		if f.Status == Updated {
+		if f.Status == diff.Updated {
 			if fields, isSlice := newValue.([]diff.Field); isSlice {
 				_, err = fmt.Fprintf(bld, "%s+ %s: {\n", strings.Repeat(" ", marginsCount), f.Name)
 				if err != nil {
@@ -109,7 +114,7 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 		}
 	} else {
 		switch f.Status {
-		case Updated:
+		case diff.Updated:
 			_, err := fmt.Fprintf(bld, "%s- %s: %v\n", strings.Repeat(" ", marginsCount), f.Name, oldValue)
 			if err != nil {
 				return "", err
@@ -118,13 +123,18 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 			if err != nil {
 				return "", err
 			}
-		case Added:
+		case diff.Added:
 			_, err := fmt.Fprintf(bld, "%s+ %s: %v\n", strings.Repeat(" ", marginsCount), f.Name, newValue)
 			if err != nil {
 				return "", err
 			}
-		case Removed:
+		case diff.Removed:
 			_, err := fmt.Fprintf(bld, "%s- %s: %v\n", strings.Repeat(" ", marginsCount), f.Name, oldValue)
+			if err != nil {
+				return "", err
+			}
+		case diff.Unchanged:
+			_, err := fmt.Fprintf(bld, "%s  %s: %v\n", strings.Repeat(" ", marginsCount), f.Name, oldValue)
 			if err != nil {
 				return "", err
 			}

@@ -44,7 +44,7 @@ func (pf *PlainFormatter) GetOutputString(f diff.Field) (string, error) {
 		to := FormatValue(f.NewValue)
 
 		switch f.Status {
-		case Added:
+		case diff.Added:
 			if f.NewValue == nil && f.Children != nil {
 				_, err := fmt.Fprintf(bld, "Property '%s' was added with value: %v\n", f.Name, FormatValue(f.Children))
 				if err != nil {
@@ -56,12 +56,12 @@ func (pf *PlainFormatter) GetOutputString(f diff.Field) (string, error) {
 					return "", err
 				}
 			}
-		case Removed:
+		case diff.Removed:
 			_, err := fmt.Fprintf(bld, "Property '%s' was removed\n", f.Name)
 			if err != nil {
 				return "", err
 			}
-		case Updated:
+		case diff.Updated:
 			if f.OldValue == nil && f.Children != nil {
 				from = FormatValue(f.Children)
 			}

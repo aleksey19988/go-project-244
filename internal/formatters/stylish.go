@@ -1,7 +1,7 @@
 package formatters
 
 import (
-	"code/internal/diff"
+	"code/internal/compare"
 	"errors"
 	"fmt"
 	"strings"
@@ -9,12 +9,12 @@ import (
 
 type StylishFormatter struct{}
 
-func (sf *StylishFormatter) Format(fields []diff.Field) (string, error) {
+func (sf *StylishFormatter) Format(fds []compare.Field) (string, error) {
 	bld := strings.Builder{}
 	bld.WriteString("{\n")
 
-	for _, field := range fields {
-		fieldData, err := sf.GetOutputString(field)
+	for _, field := range fds {
+		fieldData, err := parseFieldForStylish(field)
 		if err != nil {
 			return "", err
 		}
@@ -25,9 +25,9 @@ func (sf *StylishFormatter) Format(fields []diff.Field) (string, error) {
 
 	return bld.String(), nil
 }
-func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
+func parseFieldForStylish(f compare.Field) (string, error) {
 	if f.Depth <= 0 {
-		return "", errors.New("deep is negative or zero")
+		return "", errors.New("depth is negative or zero")
 	}
 	bld := new(strings.Builder)
 
@@ -48,22 +48,22 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 
 	if f.Children != nil {
 		switch f.Status {
-		case diff.Updated:
+		case compare.Updated:
 			_, err := fmt.Fprintf(bld, "%s- %s: {\n", strings.Repeat(" ", marginsCount), f.Name)
 			if err != nil {
 				return "", err
 			}
-		case diff.Added:
+		case compare.Added:
 			_, err := fmt.Fprintf(bld, "%s+ %s: {\n", strings.Repeat(" ", marginsCount), f.Name)
 			if err != nil {
 				return "", err
 			}
-		case diff.Removed:
+		case compare.Removed:
 			_, err := fmt.Fprintf(bld, "%s- %s: {\n", strings.Repeat(" ", marginsCount), f.Name)
 			if err != nil {
 				return "", err
 			}
-		case diff.Unchanged:
+		case compare.Unchanged:
 			_, err := fmt.Fprintf(bld, "%s  %s: {\n", strings.Repeat(" ", marginsCount), f.Name)
 			if err != nil {
 				return "", err
@@ -76,7 +76,7 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 		}
 
 		for _, child := range f.Children {
-			childData, err := sf.GetOutputString(child)
+			childData, err := parseFieldForStylish(child)
 			if err != nil {
 				return "", err
 			}
@@ -88,14 +88,14 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 			return "", err
 		}
 
-		if f.Status == diff.Updated {
-			if fields, isSlice := newValue.([]diff.Field); isSlice {
+		if f.Status == compare.Updated {
+			if fds, isSlice := newValue.([]compare.Field); isSlice {
 				_, err = fmt.Fprintf(bld, "%s+ %s: {\n", strings.Repeat(" ", marginsCount), f.Name)
 				if err != nil {
 					return "", err
 				}
-				for _, child := range fields {
-					childData, err := sf.GetOutputString(child)
+				for _, child := range fds {
+					childData, err := parseFieldForStylish(child)
 					if err != nil {
 						return "", err
 					}
@@ -114,7 +114,7 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 		}
 	} else {
 		switch f.Status {
-		case diff.Updated:
+		case compare.Updated:
 			_, err := fmt.Fprintf(bld, "%s- %s: %v\n", strings.Repeat(" ", marginsCount), f.Name, oldValue)
 			if err != nil {
 				return "", err
@@ -123,17 +123,17 @@ func (sf *StylishFormatter) GetOutputString(f diff.Field) (string, error) {
 			if err != nil {
 				return "", err
 			}
-		case diff.Added:
+		case compare.Added:
 			_, err := fmt.Fprintf(bld, "%s+ %s: %v\n", strings.Repeat(" ", marginsCount), f.Name, newValue)
 			if err != nil {
 				return "", err
 			}
-		case diff.Removed:
+		case compare.Removed:
 			_, err := fmt.Fprintf(bld, "%s- %s: %v\n", strings.Repeat(" ", marginsCount), f.Name, oldValue)
 			if err != nil {
 				return "", err
 			}
-		case diff.Unchanged:
+		case compare.Unchanged:
 			_, err := fmt.Fprintf(bld, "%s  %s: %v\n", strings.Repeat(" ", marginsCount), f.Name, oldValue)
 			if err != nil {
 				return "", err

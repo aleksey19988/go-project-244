@@ -1,7 +1,7 @@
 package main
 
 import (
-	"code/internal/diff"
+	"code/internal/compare"
 	"code/internal/formatters"
 	"code/internal/storage"
 	"context"
@@ -37,17 +37,16 @@ func main() {
 				return err
 			}
 
-			err = s.LoadFiles()
-			if err != nil {
-				return err
+			var filesData []map[string]any
+			for _, f := range s.Files {
+				fileData, err := f.CreateMapFromData()
+				if err != nil {
+					return err
+				}
+				filesData = append(filesData, fileData)
 			}
 
-			maps, err := s.CreateMapsFromData()
-			if err != nil {
-				return err
-			}
-
-			fields, err := diff.Diff(maps, 1)
+			fds, err := compare.GenDiff(filesData, 1)
 			if err != nil {
 				return err
 			}
@@ -57,7 +56,7 @@ func main() {
 				return err
 			}
 
-			result, err := f.Format(fields)
+			result, err := f.Format(fds)
 			if err != nil {
 				return err
 			}

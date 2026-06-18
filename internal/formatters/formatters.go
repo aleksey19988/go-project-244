@@ -1,7 +1,7 @@
 package formatters
 
 import (
-	"code/internal/diff"
+	"code/internal/compare"
 	"errors"
 )
 
@@ -13,8 +13,7 @@ const (
 )
 
 type Formatter interface {
-	Format(fields []diff.Field) (string, error)
-	GetOutputString(f diff.Field) (string, error)
+	Format(fields []compare.Field) (string, error)
 }
 
 func NewFormatter(format string) (Formatter, error) {

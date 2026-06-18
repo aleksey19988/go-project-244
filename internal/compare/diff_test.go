@@ -1,4 +1,4 @@
-package diff
+package compare
 
 import (
 	"code/internal/storage"
@@ -24,25 +24,20 @@ func TestValidate(t *testing.T) {
 	_, err = storage.NewStorage("/path/to/file.json", "/path/to/file.yaml")
 	require.Error(t, err)
 	assert.Equal(t, "files must have one extension", err.Error())
-
-	_, err = storage.NewStorage("/path/to/file.json", "/path/to/file.json")
-	require.NoError(t, err)
-
-	_, err = storage.NewStorage("/path/to/file.yaml", "/path/to/file.yaml")
-	require.NoError(t, err)
 }
 func TestDiff(t *testing.T) {
 	t.Run("Test json", func(t *testing.T) {
 		s, err := storage.NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
 		require.NoError(t, err)
 
-		err = s.LoadFiles()
-		require.NoError(t, err)
+		var filesData []map[string]any
+		for _, f := range s.Files {
+			fileData, err := f.CreateMapFromData()
+			require.NoError(t, err)
+			filesData = append(filesData, fileData)
+		}
 
-		maps, err := s.CreateMapsFromData()
-		require.NoError(t, err)
-
-		fields, err := Diff(maps, 1)
+		fields, err := GenDiff(filesData, 1)
 		require.NoError(t, err)
 		assert.Equal(t, 4, len(fields))
 
@@ -77,13 +72,14 @@ func TestDiff(t *testing.T) {
 		s, err := storage.NewStorage("../../testdata/fixture/yaml/file1.yaml", "../../testdata/fixture/yaml/file2.yaml")
 		require.NoError(t, err)
 
-		err = s.LoadFiles()
-		require.NoError(t, err)
+		var filesData []map[string]any
+		for _, f := range s.Files {
+			fileData, err := f.CreateMapFromData()
+			require.NoError(t, err)
+			filesData = append(filesData, fileData)
+		}
 
-		maps, err := s.CreateMapsFromData()
-		require.NoError(t, err)
-
-		fields, err := Diff(maps, 1)
+		fields, err := GenDiff(filesData, 1)
 		require.NoError(t, err)
 		assert.Equal(t, 4, len(fields))
 		expectedField := Field{

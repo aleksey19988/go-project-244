@@ -1,7 +1,7 @@
 package formatters
 
 import (
-	"code/internal/diff"
+	"code/internal/compare"
 	"fmt"
 	"testing"
 
@@ -9,10 +9,10 @@ import (
 )
 
 func TestStylishFormatter_Format(t *testing.T) {
-	fields := []diff.Field{
+	fields := []compare.Field{
 		{
 			Name:     "field_1",
-			Status:   diff.Added,
+			Status:   compare.Added,
 			OldValue: nil,
 			NewValue: 123,
 			Depth:    1,
@@ -20,7 +20,7 @@ func TestStylishFormatter_Format(t *testing.T) {
 		},
 		{
 			Name:     "field_2",
-			Status:   diff.Removed,
+			Status:   compare.Removed,
 			OldValue: 456,
 			NewValue: nil,
 			Depth:    1,
@@ -37,22 +37,22 @@ func TestStylishFormatter_Format(t *testing.T) {
 	assert.Equal(t, expected, res)
 }
 
-func TestStylishFormatter_GetOutputString(t *testing.T) {
+func TestStylishFormatter_FormatCases(t *testing.T) {
 	t.Run("Zero deep error", func(t *testing.T) {
-		fld := diff.Field{}
+		fld := compare.Field{}
 		f, err := NewFormatter("")
 		assert.NoError(t, err)
 		assert.NotNil(t, f)
 
-		_, err = f.GetOutputString(fld)
+		_, err = f.Format([]compare.Field{fld})
 		assert.Error(t, err)
-		assert.Equal(t, "deep is negative or zero", err.Error())
+		assert.Equal(t, "depth is negative or zero", err.Error())
 	})
 
 	t.Run("Add field", func(t *testing.T) {
-		fld := diff.Field{
+		fld := compare.Field{
 			Name:     "Name 1",
-			Status:   diff.Added,
+			Status:   compare.Added,
 			OldValue: nil,
 			NewValue: 123,
 			Depth:    1,
@@ -62,36 +62,36 @@ func TestStylishFormatter_GetOutputString(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, f)
 
-		res, err := f.GetOutputString(fld)
+		res, err := f.Format([]compare.Field{fld})
 		assert.NoError(t, err)
-		expected := fmt.Sprintf("  + %s: %v\n", fld.Name, fld.NewValue)
+		expected := fmt.Sprintf("{\n  + %s: %v\n}", fld.Name, fld.NewValue)
 		assert.Equal(t, expected, res)
 
-		fld = diff.Field{
+		fld = compare.Field{
 			Name:     "Name 1",
-			Status:   diff.Added,
+			Status:   compare.Added,
 			OldValue: 123,
 			NewValue: nil,
 			Depth:    1,
 			Children: nil,
 		}
 
-		res, err = f.GetOutputString(fld)
+		res, err = f.Format([]compare.Field{fld})
 		assert.NoError(t, err)
-		expected = fmt.Sprintf("  + %s: %v\n", fld.Name, "null")
+		expected = fmt.Sprintf("{\n  + %s: %v\n}", fld.Name, "null")
 		assert.Equal(t, expected, res)
 	})
 	t.Run("Add field with children", func(t *testing.T) {
-		fld := diff.Field{
+		fld := compare.Field{
 			Name:     "Name 1",
 			Status:   "",
 			OldValue: 123,
 			NewValue: nil,
 			Depth:    1,
-			Children: []diff.Field{
-				diff.Field{
+			Children: []compare.Field{
+				compare.Field{
 					Name:     "child_name",
-					Status:   diff.Added,
+					Status:   compare.Added,
 					OldValue: nil,
 					NewValue: "888",
 					Depth:    2,
@@ -104,16 +104,16 @@ func TestStylishFormatter_GetOutputString(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, f)
 
-		res, err := f.GetOutputString(fld)
+		res, err := f.Format([]compare.Field{fld})
 		assert.NoError(t, err)
-		expected := fmt.Sprintf("    %s: {\n      + %s: %v\n    }\n", fld.Name, fld.Children[0].Name, fld.Children[0].NewValue)
+		expected := fmt.Sprintf("{\n    %s: {\n      + %s: %v\n    }\n}", fld.Name, fld.Children[0].Name, fld.Children[0].NewValue)
 		assert.Equal(t, expected, res)
 	})
 
 	t.Run("Update field", func(t *testing.T) {
-		fld := diff.Field{
+		fld := compare.Field{
 			Name:     "Name 1",
-			Status:   diff.Updated,
+			Status:   compare.Updated,
 			OldValue: 123,
 			NewValue: 456,
 			Depth:    1,
@@ -123,18 +123,18 @@ func TestStylishFormatter_GetOutputString(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, f)
 
-		res, err := f.GetOutputString(fld)
+		res, err := f.Format([]compare.Field{fld})
 		assert.NoError(t, err)
-		expected := fmt.Sprintf("  - %s: %v\n  + %s: %v\n", fld.Name, fld.OldValue, fld.Name, fld.NewValue)
+		expected := fmt.Sprintf("{\n  - %s: %v\n  + %s: %v\n}", fld.Name, fld.OldValue, fld.Name, fld.NewValue)
 		assert.Equal(t, expected, res)
 	})
 	t.Run("Update field with children", func(t *testing.T) {
-		fld := diff.Field{
+		fld := compare.Field{
 			Name:     "parent_name",
-			Status:   diff.Updated,
+			Status:   compare.Updated,
 			OldValue: 123,
-			NewValue: []diff.Field{
-				diff.Field{
+			NewValue: []compare.Field{
+				compare.Field{
 					Name:     "new_field_name",
 					Status:   "",
 					OldValue: 444,
@@ -144,8 +144,8 @@ func TestStylishFormatter_GetOutputString(t *testing.T) {
 				},
 			},
 			Depth: 1,
-			Children: []diff.Field{
-				diff.Field{
+			Children: []compare.Field{
+				compare.Field{
 					Name:     "child_1",
 					Status:   "",
 					OldValue: 777,
@@ -160,19 +160,19 @@ func TestStylishFormatter_GetOutputString(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, f)
 
-		res, err := f.GetOutputString(fld)
+		res, err := f.Format([]compare.Field{fld})
 		assert.NoError(t, err)
-		expected := fmt.Sprintf("  - %s: {\n        %s: %v\n    }\n  + %s: {\n        %s: %v\n    }\n", fld.Name, fld.Children[0].Name, fld.Children[0].OldValue, fld.Name, fld.NewValue.([]diff.Field)[0].Name, fld.NewValue.([]diff.Field)[0].OldValue)
+		expected := fmt.Sprintf("{\n  - %s: {\n        %s: %v\n    }\n  + %s: {\n        %s: %v\n    }\n}", fld.Name, fld.Children[0].Name, fld.Children[0].OldValue, fld.Name, fld.NewValue.([]compare.Field)[0].Name, fld.NewValue.([]compare.Field)[0].OldValue)
 		assert.Equal(t, expected, res)
 
-		fld = diff.Field{
+		fld = compare.Field{
 			Name:     "parent_name",
-			Status:   diff.Updated,
+			Status:   compare.Updated,
 			OldValue: 123,
 			NewValue: 45678,
 			Depth:    1,
-			Children: []diff.Field{
-				diff.Field{
+			Children: []compare.Field{
+				compare.Field{
 					Name:     "child_1",
 					Status:   "",
 					OldValue: 777,
@@ -182,16 +182,16 @@ func TestStylishFormatter_GetOutputString(t *testing.T) {
 				},
 			},
 		}
-		res, err = f.GetOutputString(fld)
+		res, err = f.Format([]compare.Field{fld})
 		assert.NoError(t, err)
-		expected = fmt.Sprintf("  - %s: {\n        %s: %v\n    }\n  + %s: %v\n", fld.Name, fld.Children[0].Name, fld.Children[0].OldValue, fld.Name, fld.NewValue)
+		expected = fmt.Sprintf("{\n  - %s: {\n        %s: %v\n    }\n  + %s: %v\n}", fld.Name, fld.Children[0].Name, fld.Children[0].OldValue, fld.Name, fld.NewValue)
 		assert.Equal(t, expected, res)
 	})
 
 	t.Run("Delete field", func(t *testing.T) {
-		fld := diff.Field{
+		fld := compare.Field{
 			Name:     "Name 1",
-			Status:   diff.Removed,
+			Status:   compare.Removed,
 			OldValue: 123,
 			Depth:    1,
 			Children: nil,
@@ -200,22 +200,22 @@ func TestStylishFormatter_GetOutputString(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, f)
 
-		res, err := f.GetOutputString(fld)
+		res, err := f.Format([]compare.Field{fld})
 		assert.NoError(t, err)
-		expected := fmt.Sprintf("  - %s: %v\n", fld.Name, fld.OldValue)
+		expected := fmt.Sprintf("{\n  - %s: %v\n}", fld.Name, fld.OldValue)
 		assert.Equal(t, expected, res)
 	})
 	t.Run("Delete field with children", func(t *testing.T) {
-		fld := diff.Field{
+		fld := compare.Field{
 			Name:     "Name 1",
 			Status:   "",
 			OldValue: 123,
 			NewValue: nil,
 			Depth:    1,
-			Children: []diff.Field{
-				diff.Field{
+			Children: []compare.Field{
+				compare.Field{
 					Name:     "child_name",
-					Status:   diff.Removed,
+					Status:   compare.Removed,
 					OldValue: 888,
 					Depth:    2,
 					Children: nil,
@@ -227,16 +227,16 @@ func TestStylishFormatter_GetOutputString(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, f)
 
-		res, err := f.GetOutputString(fld)
+		res, err := f.Format([]compare.Field{fld})
 		assert.NoError(t, err)
-		expected := fmt.Sprintf("    %s: {\n      - %s: %v\n    }\n", fld.Name, fld.Children[0].Name, fld.Children[0].OldValue)
+		expected := fmt.Sprintf("{\n    %s: {\n      - %s: %v\n    }\n}", fld.Name, fld.Children[0].Name, fld.Children[0].OldValue)
 		assert.Equal(t, expected, res)
 	})
 
-	t.Run("diff.Unchanged field", func(t *testing.T) {
-		fld := diff.Field{
+	t.Run("Unchange field", func(t *testing.T) {
+		fld := compare.Field{
 			Name:     "Name 1",
-			Status:   diff.Unchanged,
+			Status:   compare.Unchanged,
 			OldValue: 123,
 			Depth:    1,
 			Children: nil,
@@ -245,22 +245,22 @@ func TestStylishFormatter_GetOutputString(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, f)
 
-		res, err := f.GetOutputString(fld)
+		res, err := f.Format([]compare.Field{fld})
 		assert.NoError(t, err)
-		expected := fmt.Sprintf("    %s: %v\n", fld.Name, fld.OldValue)
+		expected := fmt.Sprintf("{\n    %s: %v\n}", fld.Name, fld.OldValue)
 		assert.Equal(t, expected, res)
 	})
-	t.Run("diff.Unchanged field with children", func(t *testing.T) {
-		fld := diff.Field{
+	t.Run("Unchange field with children", func(t *testing.T) {
+		fld := compare.Field{
 			Name:     "Name 1",
 			Status:   "",
 			OldValue: 123,
 			NewValue: nil,
 			Depth:    1,
-			Children: []diff.Field{
-				diff.Field{
+			Children: []compare.Field{
+				compare.Field{
 					Name:     "child_name",
-					Status:   diff.Unchanged,
+					Status:   compare.Unchanged,
 					OldValue: 888,
 					Depth:    2,
 					Children: nil,
@@ -272,9 +272,9 @@ func TestStylishFormatter_GetOutputString(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, f)
 
-		res, err := f.GetOutputString(fld)
+		res, err := f.Format([]compare.Field{fld})
 		assert.NoError(t, err)
-		expected := fmt.Sprintf("    %s: {\n        %s: %v\n    }\n", fld.Name, fld.Children[0].Name, fld.Children[0].OldValue)
+		expected := fmt.Sprintf("{\n    %s: {\n        %s: %v\n    }\n}", fld.Name, fld.Children[0].Name, fld.Children[0].OldValue)
 		assert.Equal(t, expected, res)
 	})
 }

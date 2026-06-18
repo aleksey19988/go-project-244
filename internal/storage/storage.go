@@ -17,10 +17,13 @@ const (
 )
 
 type Storage struct {
-	Path1     string
-	Path2     string
-	RawData   [][]byte
+	Files []*FileData
+}
+
+type FileData struct {
+	Name      string
 	Extension string
+	RawData   []byte
 }
 
 func NewStorage(path1, path2 string) (*Storage, error) {
@@ -43,48 +46,45 @@ func NewStorage(path1, path2 string) (*Storage, error) {
 		return nil, errors.New("files must have one extension")
 	}
 
-	return &Storage{
-		Path1:     path1,
-		Path2:     path2,
-		Extension: filepath.Ext(path1),
-	}, nil
-}
-func (s *Storage) GetPaths() []string {
-	return []string{s.Path1, s.Path2}
-}
-func (s *Storage) CreateMapsFromData() ([]map[string]any, error) {
-	if len(s.RawData) == 0 {
-		if err := s.LoadFiles(); err != nil {
-			return nil, err
-		}
+	var files []*FileData
+
+	file1, err := loadFileData(path1)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %w", path1, err)
 	}
-	result := make([]map[string]any, 0)
-	for i, data := range s.RawData {
-		m := make(map[string]any)
-		switch s.Extension {
-		case JsonExt:
-			if err := json.Unmarshal(data, &m); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal file #%d: %w", i+1, err)
-			}
-		case YamlExt, YmlExt:
-			if err := yaml.Unmarshal(data, &m); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal file #%d: %w", i+1, err)
-			}
+	files = append(files, file1)
+
+	file2, err := loadFileData(path2)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %w", path2, err)
+	}
+	files = append(files, file2)
+
+	return &Storage{Files: files}, nil
+}
+func (fd *FileData) CreateMapFromData() (map[string]any, error) {
+	result := make(map[string]any)
+	switch fd.Extension {
+	case JsonExt:
+		if err := json.Unmarshal(fd.RawData, &result); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal file '%s': %w", fd.Name, err)
 		}
-		result = append(result, m)
+	case YamlExt, YmlExt:
+		if err := yaml.Unmarshal(fd.RawData, &result); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal file '%s': %w", fd.Name, err)
+		}
 	}
 
 	return result, nil
 }
-func (s *Storage) LoadFiles() error {
-	s.RawData = make([][]byte, 0, 2)
-
-	for _, path := range s.GetPaths() {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("failed to read %s: %w", path, err)
-		}
-		s.RawData = append(s.RawData, data)
+func loadFileData(path string) (*FileData, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %w", path, err)
 	}
-	return nil
+	return &FileData{
+		RawData:   data,
+		Name:      path,
+		Extension: filepath.Ext(path),
+	}, nil
 }

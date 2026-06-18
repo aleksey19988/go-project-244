@@ -7,21 +7,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestStorage_GetPaths(t *testing.T) {
-	s, err := NewStorage("path1.json", "path2.json")
-	require.NoError(t, err)
-
-	assert.Equal(t, 2, len(s.GetPaths()))
-	assert.Equal(t, "path1.json", s.GetPaths()[0])
-	assert.Equal(t, "path2.json", s.GetPaths()[1])
-}
-
 func TestStorage_LoadFiles(t *testing.T) {
 	s, err := NewStorage("path1.json", "path2.json")
-	require.NoError(t, err)
+	require.Error(t, err)
 
-	err = s.LoadFiles()
-	assert.Error(t, err)
 	_, err = NewStorage("", "path2.json")
 	require.Error(t, err)
 	assert.Equal(t, "path to file 1 is empty", err.Error())
@@ -32,9 +21,14 @@ func TestStorage_LoadFiles(t *testing.T) {
 
 	s, err = NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
 	require.NoError(t, err)
-	err = s.LoadFiles()
+	var filesData []map[string]any
+	for _, f := range s.Files {
+		fileData, err := f.CreateMapFromData()
+		require.NoError(t, err)
+		filesData = append(filesData, fileData)
+	}
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(s.RawData))
+	assert.Equal(t, 2, len(filesData))
 }
 
 func TestStorage_CreateMapsFromData(t *testing.T) {
@@ -43,18 +37,19 @@ func TestStorage_CreateMapsFromData(t *testing.T) {
 		require.Error(t, err)
 		assert.Equal(t, "path to file 1 must have .json or .yaml extension", err.Error())
 	})
-
 	t.Run("Valid json files", func(t *testing.T) {
 		s, err := NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
 		require.NoError(t, err)
 
-		err = s.LoadFiles()
-		assert.NoError(t, err)
-		maps, err := s.CreateMapsFromData()
-		assert.NoError(t, err)
-		assert.Equal(t, 2, len(maps))
+		var filesData []map[string]any
+		for _, f := range s.Files {
+			fileData, err := f.CreateMapFromData()
+			require.NoError(t, err)
+			filesData = append(filesData, fileData)
+		}
+		assert.Equal(t, 2, len(filesData))
 
-		m1 := maps[0]
+		m1 := filesData[0]
 		expected := map[string]any{
 			"abc": float64(12345),
 			"deep": map[string]any{
@@ -62,7 +57,7 @@ func TestStorage_CreateMapsFromData(t *testing.T) {
 			},
 		}
 		assert.Equal(t, expected, m1["group2"])
-		m2 := maps[1]
+		m2 := filesData[1]
 		expected = map[string]any{
 			"foo":  "bar",
 			"baz":  "bars",
@@ -70,18 +65,20 @@ func TestStorage_CreateMapsFromData(t *testing.T) {
 		}
 		assert.Equal(t, expected, m2["group1"])
 	})
-
 	t.Run("Valid yaml files", func(t *testing.T) {
 		s, err := NewStorage("../../testdata/fixture/yaml/file1.yaml", "../../testdata/fixture/yaml/file2.yaml")
 		require.NoError(t, err)
 
-		err = s.LoadFiles()
-		assert.NoError(t, err)
-		maps, err := s.CreateMapsFromData()
-		assert.NoError(t, err)
-		assert.Equal(t, 2, len(maps))
+		var filesData []map[string]any
+		for _, f := range s.Files {
+			fileData, err := f.CreateMapFromData()
+			require.NoError(t, err)
 
-		m1 := maps[0]
+			filesData = append(filesData, fileData)
+		}
+		assert.Equal(t, 2, len(filesData))
+
+		m1 := filesData[0]
 		expected := map[string]any{
 			"abc": 12345,
 			"deep": map[string]any{
@@ -89,7 +86,7 @@ func TestStorage_CreateMapsFromData(t *testing.T) {
 			},
 		}
 		assert.Equal(t, expected, m1["group2"])
-		m2 := maps[1]
+		m2 := filesData[1]
 		expected = map[string]any{
 			"foo":  "bar",
 			"baz":  "bars",

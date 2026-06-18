@@ -1,7 +1,7 @@
 package formatters
 
 import (
-	"code/internal/diff"
+	"code/internal/compare"
 	"errors"
 	"fmt"
 	"strings"
@@ -9,11 +9,11 @@ import (
 
 type PlainFormatter struct{}
 
-func (pf *PlainFormatter) Format(fields []diff.Field) (string, error) {
+func (pf *PlainFormatter) Format(fields []compare.Field) (string, error) {
 	bld := strings.Builder{}
 
 	for _, field := range fields {
-		fieldData, err := pf.GetOutputString(field)
+		fieldData, err := parseFieldForPlain(field)
 		if err != nil {
 			return "", err
 		}
@@ -22,9 +22,9 @@ func (pf *PlainFormatter) Format(fields []diff.Field) (string, error) {
 
 	return bld.String(), nil
 }
-func (pf *PlainFormatter) GetOutputString(f diff.Field) (string, error) {
+func parseFieldForPlain(f compare.Field) (string, error) {
 	if f.Depth <= 0 {
-		return "", errors.New("deep is negative or zero")
+		return "", errors.New("depth is negative or zero")
 	}
 
 	bld := new(strings.Builder)
@@ -33,20 +33,20 @@ func (pf *PlainFormatter) GetOutputString(f diff.Field) (string, error) {
 		for _, child := range f.Children {
 			cp := child
 			cp.Name = fmt.Sprintf("%s.%s", f.Name, child.Name)
-			childData, err := pf.GetOutputString(cp)
+			childData, err := parseFieldForPlain(cp)
 			if err != nil {
 				return "", err
 			}
 			bld.WriteString(childData)
 		}
 	} else {
-		from := FormatValue(f.OldValue)
-		to := FormatValue(f.NewValue)
+		from := formatValue(f.OldValue)
+		to := formatValue(f.NewValue)
 
 		switch f.Status {
-		case diff.Added:
+		case compare.Added:
 			if f.NewValue == nil && f.Children != nil {
-				_, err := fmt.Fprintf(bld, "Property '%s' was added with value: %v\n", f.Name, FormatValue(f.Children))
+				_, err := fmt.Fprintf(bld, "Property '%s' was added with value: %v\n", f.Name, formatValue(f.Children))
 				if err != nil {
 					return "", err
 				}
@@ -56,18 +56,18 @@ func (pf *PlainFormatter) GetOutputString(f diff.Field) (string, error) {
 					return "", err
 				}
 			}
-		case diff.Removed:
+		case compare.Removed:
 			_, err := fmt.Fprintf(bld, "Property '%s' was removed\n", f.Name)
 			if err != nil {
 				return "", err
 			}
-		case diff.Updated:
+		case compare.Updated:
 			if f.OldValue == nil && f.Children != nil {
-				from = FormatValue(f.Children)
+				from = formatValue(f.Children)
 			}
 
 			if f.NewValue == nil && f.Children != nil {
-				to = FormatValue(f.Children)
+				to = formatValue(f.Children)
 			}
 
 			_, err := fmt.Fprintf(bld, "Property '%s' was updated. From %v to %v\n", f.Name, from, to)
@@ -79,7 +79,7 @@ func (pf *PlainFormatter) GetOutputString(f diff.Field) (string, error) {
 
 	return bld.String(), nil
 }
-func FormatValue(v any) string {
+func formatValue(v any) string {
 	switch v.(type) {
 	case nil:
 		return "null"
@@ -87,7 +87,7 @@ func FormatValue(v any) string {
 		return fmt.Sprintf("'%s'", v)
 	case bool:
 		return fmt.Sprintf("%v", v)
-	case []diff.Field, map[string]any:
+	case []compare.Field, map[string]any:
 		return "[complex value]"
 	default:
 		return fmt.Sprintf("WARNING: unknown type: %T\n", v)

@@ -1,4 +1,4 @@
-package diff
+package compare
 
 import (
 	"slices"
@@ -12,7 +12,7 @@ const (
 	Unchanged = "unchanged"
 )
 
-func Diff(pair []map[string]any, deep int) ([]Field, error) {
+func GenDiff(pair []map[string]any, depth int) ([]Field, error) {
 	var fields []Field
 
 	keys := getAllKeys(pair)
@@ -31,41 +31,41 @@ func Diff(pair []map[string]any, deep int) ([]Field, error) {
 			var err error
 
 			if firstIsMap && secondIsMap {
-				children, err = Diff([]map[string]any{
+				children, err = GenDiff([]map[string]any{
 					firstMap,
 					secondMap,
-				}, deep+1)
+				}, depth+1)
 				if err != nil {
 					return nil, err
 				}
 				fields = append(fields, Field{
 					Name:     k,
-					Depth:    deep,
+					Depth:    depth,
 					Children: children,
 				})
 				continue
 			} else if firstIsMap {
 				fields = append(fields, Field{
 					Name:     k,
-					Depth:    deep,
+					Depth:    depth,
 					Status:   Updated,
-					OldValue: getNestedFields(firstMap, deep+1),
+					OldValue: getNestedFields(firstMap, depth+1),
 					NewValue: secondFieldValue,
-					Children: getNestedFields(firstMap, deep+1),
+					Children: getNestedFields(firstMap, depth+1),
 				})
 			} else if secondIsMap {
 				fields = append(fields, Field{
 					Name:     k,
-					Depth:    deep,
+					Depth:    depth,
 					Status:   Updated,
 					OldValue: firstFieldValue,
-					NewValue: getNestedFields(secondMap, deep+1),
-					Children: getNestedFields(secondMap, deep+1),
+					NewValue: getNestedFields(secondMap, depth+1),
+					Children: getNestedFields(secondMap, depth+1),
 				})
 			} else if firstFieldValue != secondFieldValue {
 				fields = append(fields, Field{
 					Name:     k,
-					Depth:    deep,
+					Depth:    depth,
 					Status:   Updated,
 					OldValue: firstFieldValue,
 					NewValue: secondFieldValue,
@@ -76,15 +76,15 @@ func Diff(pair []map[string]any, deep int) ([]Field, error) {
 					OldValue: firstFieldValue,
 					NewValue: firstFieldValue,
 					Status:   Unchanged,
-					Depth:    deep,
+					Depth:    depth,
 				})
 			}
 		} else if isKeyExistsInFirst {
 			// ключ есть только в первом, значит был удалён
-			fields = append(fields, getRemovedOrAddedField(k, firstFieldValue, Removed, deep))
+			fields = append(fields, getRemovedOrAddedField(k, firstFieldValue, Removed, depth))
 		} else if isKeyExistsInSecond {
 			// ключ есть только во втором, значит был добавлен
-			fields = append(fields, getRemovedOrAddedField(k, secondFieldValue, Added, deep))
+			fields = append(fields, getRemovedOrAddedField(k, secondFieldValue, Added, depth))
 		}
 	}
 
@@ -94,15 +94,15 @@ func getRemovedOrAddedField(
 	fieldName string,
 	value any,
 	typeOfChange string,
-	deep int,
+	depth int,
 ) Field {
 	result := Field{
 		Name:   fieldName,
 		Status: typeOfChange,
-		Depth:  deep,
+		Depth:  depth,
 	}
 	if mapValue, isMap := value.(map[string]any); isMap {
-		result.Children = getNestedFields(mapValue, deep+1)
+		result.Children = getNestedFields(mapValue, depth+1)
 	} else {
 		result.OldValue = value
 		result.NewValue = value
@@ -110,7 +110,7 @@ func getRemovedOrAddedField(
 
 	return result
 }
-func getNestedFields(m map[string]any, deep int) []Field {
+func getNestedFields(m map[string]any, depth int) []Field {
 	var fields []Field
 
 	var keys []string
@@ -124,15 +124,15 @@ func getNestedFields(m map[string]any, deep int) []Field {
 		if ok {
 			fields = append(fields, Field{
 				Name:     key,
-				Children: getNestedFields(mapValue, deep+1),
-				Depth:    deep,
+				Children: getNestedFields(mapValue, depth+1),
+				Depth:    depth,
 			})
 		} else {
 			fields = append(fields, Field{
 				Name:     key,
 				OldValue: m[key],
 				NewValue: m[key],
-				Depth:    deep,
+				Depth:    depth,
 			})
 		}
 	}

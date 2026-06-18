@@ -1,14 +1,14 @@
 package formatters
 
 import (
-	"code/internal/diff"
+	"code/internal/compare"
 	"encoding/json"
 )
 
 type JsonFormatter struct{}
 
-func (jf JsonFormatter) Format(fields []diff.Field) (string, error) {
-	res, err := jf.getFieldDataForOutput(fields)
+func (jf *JsonFormatter) Format(fields []compare.Field) (string, error) {
+	res, err := getFieldDataForOutput(fields)
 	if err != nil {
 		return "", err
 	}
@@ -21,14 +21,10 @@ func (jf JsonFormatter) Format(fields []diff.Field) (string, error) {
 	return string(jsonData), nil
 }
 
-func (jf JsonFormatter) GetOutputString(f diff.Field) (string, error) {
-	return "", nil
-}
-
-func (jf JsonFormatter) getFieldDataForOutput(fields []diff.Field) (map[string]any, error) {
+func getFieldDataForOutput(fds []compare.Field) (map[string]any, error) {
 	res := make(map[string]any)
 
-	for _, field := range fields {
+	for _, field := range fds {
 		fieldData := map[string]any{}
 
 		if field.Status != "" {
@@ -36,28 +32,28 @@ func (jf JsonFormatter) getFieldDataForOutput(fields []diff.Field) (map[string]a
 		}
 
 		switch field.Status {
-		case diff.Added:
-			value, err := jf.getParsedData(field, diff.Added)
+		case compare.Added:
+			value, err := parseFieldForJson(field, compare.Added)
 			if err != nil {
 				return nil, err
 			}
 			fieldData["value"] = value
 			res[field.Name] = fieldData
-		case diff.Removed, diff.Unchanged:
-			value, err := jf.getParsedData(field, diff.Removed)
+		case compare.Removed, compare.Unchanged:
+			value, err := parseFieldForJson(field, compare.Removed)
 			if err != nil {
 				return nil, err
 			}
 			fieldData["value"] = value
 			res[field.Name] = fieldData
-		case diff.Updated:
-			oldValue, err := jf.getParsedData(field, diff.Removed)
+		case compare.Updated:
+			oldValue, err := parseFieldForJson(field, compare.Removed)
 			if err != nil {
 				return nil, err
 			}
 			fieldData["old_value"] = oldValue
 
-			newValue, err := jf.getParsedData(field, diff.Added)
+			newValue, err := parseFieldForJson(field, compare.Added)
 			if err != nil {
 				return nil, err
 			}
@@ -65,7 +61,7 @@ func (jf JsonFormatter) getFieldDataForOutput(fields []diff.Field) (map[string]a
 			res[field.Name] = fieldData
 		default:
 			if len(field.Children) > 0 {
-				childrenData, err := jf.getFieldDataForOutput(field.Children)
+				childrenData, err := getFieldDataForOutput(field.Children)
 				if err != nil {
 					return nil, err
 				}
@@ -81,13 +77,12 @@ func (jf JsonFormatter) getFieldDataForOutput(fields []diff.Field) (map[string]a
 
 	return res, nil
 }
-
-func (jf JsonFormatter) getParsedData(field diff.Field, status string) (any, error) {
+func parseFieldForJson(field compare.Field, status string) (any, error) {
 	var value any
 
-	if status == diff.Added {
+	if status == compare.Added {
 		value = field.NewValue
-	} else if status == diff.Removed {
+	} else if status == compare.Removed {
 		value = field.OldValue
 	}
 
@@ -95,11 +90,16 @@ func (jf JsonFormatter) getParsedData(field diff.Field, status string) (any, err
 		value = field.Children
 	}
 
-	if _, ok := value.([]diff.Field); ok {
-		childrenData, err := jf.getFieldDataForOutput(value.([]diff.Field))
-		if err != nil {
-			return nil, err
+	if _, ok := value.([]compare.Field); ok {
+		childrenData := map[string]any{}
+		for _, v := range value.([]compare.Field) {
+			childData, err := parseFieldForJson(v, v.Status)
+			if err != nil {
+				return nil, err
+			}
+			childrenData[v.Name] = childData
 		}
+
 		children := map[string]any{}
 		for k, v := range childrenData {
 			children[k] = v

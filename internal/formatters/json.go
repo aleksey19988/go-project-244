@@ -80,9 +80,10 @@ func getFieldDataForOutput(fds []compare.Field) (map[string]any, error) {
 func parseFieldForJson(field compare.Field, status string) (any, error) {
 	var value any
 
-	if status == compare.Added {
+	switch status {
+	case compare.Added:
 		value = field.NewValue
-	} else if status == compare.Removed {
+	case compare.Removed:
 		value = field.OldValue
 	}
 

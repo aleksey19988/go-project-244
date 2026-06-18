@@ -1,6 +1,8 @@
 package storage
 
 import (
+	fls "code/internal/files"
+	"code/internal/parser"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,22 +10,28 @@ import (
 )
 
 func TestStorage_LoadFiles(t *testing.T) {
-	s, err := NewStorage("path1.json", "path2.json")
+	_, err := GetFilesData("path1.json", "path2.json")
 	require.Error(t, err)
 
-	_, err = NewStorage("", "path2.json")
+	_, err = GetFilesData("", "path2.json")
 	require.Error(t, err)
-	assert.Equal(t, "path to file 1 is empty", err.Error())
+	assert.Equal(t, "failed to read : path cannot be empty", err.Error())
 
-	_, err = NewStorage("path1.json", "path2.yaml")
+	_, err = GetFilesData("path1.json", "path2.yaml")
 	require.Error(t, err)
-	assert.Equal(t, "files must have one extension", err.Error())
+	assert.Equal(t, "failed to read path1.json: open path1.json: no such file or directory", err.Error())
 
-	s, err = NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
+	files, err := GetFilesData("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
 	require.NoError(t, err)
+
+	err = fls.Validate(files)
+	if err != nil {
+		require.NoError(t, err)
+	}
+
 	var filesData []map[string]any
-	for _, f := range s.Files {
-		fileData, err := f.CreateMapFromData()
+	for _, f := range files {
+		fileData, err := parser.ParseData(*f)
 		require.NoError(t, err)
 		filesData = append(filesData, fileData)
 	}
@@ -33,17 +41,21 @@ func TestStorage_LoadFiles(t *testing.T) {
 
 func TestStorage_CreateMapsFromData(t *testing.T) {
 	t.Run("Invalid file to create maps", func(t *testing.T) {
-		_, err := NewStorage("../../testdata/fixture/file.txt", "../../testdata/fixture/json/file2.json")
-		require.Error(t, err)
-		assert.Equal(t, "path to file 1 must have .json or .yaml extension", err.Error())
+		_, err := GetFilesData("../../testdata/fixture/file.txt", "../../testdata/fixture/json/file2.json")
+		require.NoError(t, err)
 	})
 	t.Run("Valid json files", func(t *testing.T) {
-		s, err := NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
+		files, err := GetFilesData("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
 		require.NoError(t, err)
 
+		err = fls.Validate(files)
+		if err != nil {
+			require.NoError(t, err)
+		}
+
 		var filesData []map[string]any
-		for _, f := range s.Files {
-			fileData, err := f.CreateMapFromData()
+		for _, f := range files {
+			fileData, err := parser.ParseData(*f)
 			require.NoError(t, err)
 			filesData = append(filesData, fileData)
 		}
@@ -66,12 +78,17 @@ func TestStorage_CreateMapsFromData(t *testing.T) {
 		assert.Equal(t, expected, m2["group1"])
 	})
 	t.Run("Valid yaml files", func(t *testing.T) {
-		s, err := NewStorage("../../testdata/fixture/yaml/file1.yaml", "../../testdata/fixture/yaml/file2.yaml")
+		files, err := GetFilesData("../../testdata/fixture/yaml/file1.yaml", "../../testdata/fixture/yaml/file2.yaml")
 		require.NoError(t, err)
 
+		err = fls.Validate(files)
+		if err != nil {
+			require.NoError(t, err)
+		}
+
 		var filesData []map[string]any
-		for _, f := range s.Files {
-			fileData, err := f.CreateMapFromData()
+		for _, f := range files {
+			fileData, err := parser.ParseData(*f)
 			require.NoError(t, err)
 
 			filesData = append(filesData, fileData)

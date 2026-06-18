@@ -2,7 +2,9 @@ package main
 
 import (
 	"code/internal/compare"
+	fls "code/internal/files"
 	"code/internal/formatters"
+	"code/internal/parser"
 	"code/internal/storage"
 	"context"
 	"fmt"
@@ -32,31 +34,33 @@ func main() {
 			path1 := cmd.Args().Get(0)
 			path2 := cmd.Args().Get(1)
 
-			s, err := storage.NewStorage(path1, path2)
+			files, err := storage.GetFilesData(path1, path2)
+			if err != nil {
+				return err
+			}
+
+			err = fls.Validate(files)
 			if err != nil {
 				return err
 			}
 
 			var filesData []map[string]any
-			for _, f := range s.Files {
-				fileData, err := f.CreateMapFromData()
+			for _, f := range files {
+				fileData, err := parser.ParseData(*f)
 				if err != nil {
 					return err
 				}
 				filesData = append(filesData, fileData)
 			}
 
-			fds, err := compare.GenDiff(filesData, 1)
-			if err != nil {
-				return err
-			}
+			fields := compare.GenDiff(filesData[0], filesData[1])
 
 			f, err := formatters.NewFormatter(cmd.String("format"))
 			if err != nil {
 				return err
 			}
 
-			result, err := f.Format(fds)
+			result, err := f.Format(fields)
 			if err != nil {
 				return err
 			}

@@ -12,15 +12,18 @@ const (
 	Unchanged = "unchanged"
 )
 
-func GenDiff(pair []map[string]any, depth int) ([]Field, error) {
+func GenDiff(first, second map[string]any) []Field {
+	return genDiffWithDepth(first, second, 1)
+}
+func genDiffWithDepth(first, second map[string]any, depth int) []Field {
 	var fields []Field
 
-	keys := getAllKeys(pair)
+	keys := getAllKeys([]map[string]any{first, second})
 	slices.Sort(keys)
 
 	for _, k := range keys {
-		firstFieldValue, isKeyExistsInFirst := pair[0][k]
-		secondFieldValue, isKeyExistsInSecond := pair[1][k]
+		firstFieldValue, isKeyExistsInFirst := first[k]
+		secondFieldValue, isKeyExistsInSecond := second[k]
 
 		firstMap, firstIsMap := firstFieldValue.(map[string]any)
 		secondMap, secondIsMap := secondFieldValue.(map[string]any)
@@ -28,16 +31,9 @@ func GenDiff(pair []map[string]any, depth int) ([]Field, error) {
 		if isKeyExistsInFirst && isKeyExistsInSecond {
 			// ключ есть в обоих файлах
 			var children []Field
-			var err error
 
 			if firstIsMap && secondIsMap {
-				children, err = GenDiff([]map[string]any{
-					firstMap,
-					secondMap,
-				}, depth+1)
-				if err != nil {
-					return nil, err
-				}
+				children = genDiffWithDepth(firstMap, secondMap, depth+1)
 				fields = append(fields, Field{
 					Name:     k,
 					Depth:    depth,
@@ -88,7 +84,7 @@ func GenDiff(pair []map[string]any, depth int) ([]Field, error) {
 		}
 	}
 
-	return fields, nil
+	return fields
 }
 func getRemovedOrAddedField(
 	fieldName string,

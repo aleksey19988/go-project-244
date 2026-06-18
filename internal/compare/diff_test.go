@@ -1,6 +1,8 @@
 package compare
 
 import (
+	fls "code/internal/files"
+	"code/internal/parser"
 	"code/internal/storage"
 	"testing"
 
@@ -9,36 +11,40 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-	_, err := storage.NewStorage("", "")
+	_, err := storage.GetFilesData("", "")
 	require.Error(t, err)
-	assert.Equal(t, "path to file 1 is empty", err.Error())
+	assert.Equal(t, "failed to read : path cannot be empty", err.Error())
 
-	_, err = storage.NewStorage("path.json", "")
+	_, err = storage.GetFilesData("path.json", "")
 	require.Error(t, err)
-	assert.Equal(t, "path to file 2 is empty", err.Error())
+	assert.Equal(t, "failed to read path.json: open path.json: no such file or directory", err.Error())
 
-	_, err = storage.NewStorage("/path/to/file", "")
+	_, err = storage.GetFilesData("/path/to/file", "")
 	require.Error(t, err)
-	assert.Equal(t, "path to file 1 must have .json or .yaml extension", err.Error())
+	assert.Equal(t, "failed to read /path/to/file: open /path/to/file: no such file or directory", err.Error())
 
-	_, err = storage.NewStorage("/path/to/file.json", "/path/to/file.yaml")
+	_, err = storage.GetFilesData("/path/to/file.json", "/path/to/file.yaml")
 	require.Error(t, err)
-	assert.Equal(t, "files must have one extension", err.Error())
+	assert.Equal(t, "failed to read /path/to/file.json: open /path/to/file.json: no such file or directory", err.Error())
 }
 func TestDiff(t *testing.T) {
 	t.Run("Test json", func(t *testing.T) {
-		s, err := storage.NewStorage("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
+		files, err := storage.GetFilesData("../../testdata/fixture/json/file1.json", "../../testdata/fixture/json/file2.json")
 		require.NoError(t, err)
 
+		err = fls.Validate(files)
+		if err != nil {
+			require.NoError(t, err)
+		}
+
 		var filesData []map[string]any
-		for _, f := range s.Files {
-			fileData, err := f.CreateMapFromData()
+		for _, f := range files {
+			fileData, err := parser.ParseData(*f)
 			require.NoError(t, err)
 			filesData = append(filesData, fileData)
 		}
 
-		fields, err := GenDiff(filesData, 1)
-		require.NoError(t, err)
+		fields := GenDiff(filesData[0], filesData[1])
 		assert.Equal(t, 4, len(fields))
 
 		expectedField := Field{
@@ -69,18 +75,22 @@ func TestDiff(t *testing.T) {
 		assert.Equal(t, expectedField, fields[2])
 	})
 	t.Run("Test yaml", func(t *testing.T) {
-		s, err := storage.NewStorage("../../testdata/fixture/yaml/file1.yaml", "../../testdata/fixture/yaml/file2.yaml")
+		files, err := storage.GetFilesData("../../testdata/fixture/yaml/file1.yaml", "../../testdata/fixture/yaml/file2.yaml")
 		require.NoError(t, err)
 
+		err = fls.Validate(files)
+		if err != nil {
+			require.NoError(t, err)
+		}
+
 		var filesData []map[string]any
-		for _, f := range s.Files {
-			fileData, err := f.CreateMapFromData()
+		for _, f := range files {
+			fileData, err := parser.ParseData(*f)
 			require.NoError(t, err)
 			filesData = append(filesData, fileData)
 		}
 
-		fields, err := GenDiff(filesData, 1)
-		require.NoError(t, err)
+		fields := GenDiff(filesData[0], filesData[1])
 		assert.Equal(t, 4, len(fields))
 		expectedField := Field{
 			Name:   "group2",
